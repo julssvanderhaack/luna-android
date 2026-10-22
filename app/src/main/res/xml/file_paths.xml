@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Luna opens files anywhere: internal storage, USB drives, SD cards, and
+     remote files downloaded to the cache. -->
+<paths>
+    <root-path name="root" path="/" />
+    <cache-path name="cache" path="." />
+</paths>

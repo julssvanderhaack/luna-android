@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Luna</string>
+    <string name="server_channel">Servidor SFTP</string>
+    <string name="server_title">Luna comparte el móvil por SFTP</string>
+    <string name="server_starting">Arrancando…</string>
+    <string name="server_running_on">sftp://%1$s:%2$d · toca para ver los datos</string>
+    <string name="server_stop">Detener</string>
+</resources>
