@@ -18,6 +18,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material3.Button
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -27,7 +30,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +48,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.julssvanderhaack.luna.fs.Progress
+import kotlinx.coroutines.launch
 
 @Composable
 fun AppRoot(vm: MainViewModel) {
@@ -63,6 +69,16 @@ fun AppRoot(vm: MainViewModel) {
         val route = vm.stack.last()
         BackHandler(enabled = vm.stack.size > 1) { vm.back() }
         val progress by vm.progress.collectAsStateWithLifecycle()
+        val drawer = rememberDrawerState(DrawerValue.Closed)
+        val scope = rememberCoroutineScope()
+        BackHandler(enabled = drawer.isOpen) { scope.launch { drawer.close() } }
+        // only swipe to close: a swipe to open would fight the system back gesture and horizontal lists
+        ModalNavigationDrawer(
+            drawerState = drawer,
+            gesturesEnabled = drawer.isOpen,
+            drawerContent = { LunaDrawer(vm) { scope.launch { drawer.close() } } },
+        ) {
+        CompositionLocalProvider(LocalOpenDrawer provides { scope.launch { drawer.open() } }) {
         Box(Modifier.fillMaxSize()) {
             when (route) {
                 Route.Home -> HomeScreen(vm)
@@ -77,6 +93,8 @@ fun AppRoot(vm: MainViewModel) {
                 progress?.let { ProgressCard(it, vm::cancelOp) }
                 SnackbarHost(snack)
             }
+        }
+        }
         }
     }
 }

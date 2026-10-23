@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.AccountTree
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.AudioFile
@@ -91,21 +92,6 @@ import io.github.julssvanderhaack.luna.server.SftpServerService
 import io.github.julssvanderhaack.luna.theme.LocalPalette
 import io.github.julssvanderhaack.luna.theme.compose
 
-private data class Shortcut(val label: String, val icon: ImageVector, val color: @Composable () -> Color, val go: (MainViewModel) -> Unit)
-
-private val SHORTCUTS = listOf(
-    Shortcut("Cámara", Icons.Rounded.CameraAlt, { LocalPalette.current.magenta.compose() }) { it.browse(Loc.Media(Category.CAMERA)) },
-    Shortcut("Descargas", Icons.Rounded.Download, { LocalPalette.current.blue.compose() }) {
-        it.browse(Loc.Local(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).path))
-    },
-    Shortcut("Imágenes", Icons.Rounded.Image, { LocalPalette.current.cyan.compose() }) { it.browse(Loc.Media(Category.IMAGES)) },
-    Shortcut("Vídeos", Icons.Rounded.Movie, { LocalPalette.current.redKind.compose() }) { it.browse(Loc.Media(Category.VIDEOS)) },
-    Shortcut("Audio", Icons.Rounded.AudioFile, { LocalPalette.current.orange.compose() }) { it.browse(Loc.Media(Category.AUDIO)) },
-    Shortcut("Documentos", Icons.Rounded.Description, { LocalPalette.current.yellow.compose() }) { it.browse(Loc.Media(Category.DOCUMENTS)) },
-    Shortcut("APK", Icons.Rounded.Android, { LocalPalette.current.green.compose() }) { it.browse(Loc.Media(Category.APKS)) },
-    Shortcut("Comprimidos", Icons.Rounded.FolderZip, { MaterialTheme.colorScheme.primary }) { it.browse(Loc.Media(Category.ARCHIVES)) },
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(vm: MainViewModel) {
@@ -124,6 +110,7 @@ fun HomeScreen(vm: MainViewModel) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                navigationIcon = { DrawerButton() },
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(painterResource(R.mipmap.ic_launcher_round), null, modifier = Modifier.size(30.dp))
@@ -157,6 +144,9 @@ fun HomeScreen(vm: MainViewModel) {
                 vm.say("Android solo deja expulsar desde sus ajustes de almacenamiento")
                 runCatching { context.startActivity(Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS)) }
             } }
+            item {
+                NavRow(Icons.Rounded.AccountTree, "Raíz del sistema", "/ · todo el árbol de carpetas, como en el PC") { vm.browse(Loc.Local("/")) }
+            }
             if (volumes.none { it.type != VolumeType.INTERNAL }) item {
                 Text(
                     "Conecta un pendrive o un disco USB (con un adaptador OTG) y aparecerá aquí.",
@@ -226,12 +216,12 @@ private fun RecentStrip(recents: List<FileEntry>?, onOpen: (FileEntry) -> Unit, 
 @Composable
 private fun Shortcuts(vm: MainViewModel) {
     Column(Modifier.padding(horizontal = 8.dp)) {
-        SHORTCUTS.chunked(4).forEach { row ->
+        SHORTCUTS.filter { it.onHome }.chunked(4).forEach { row ->
             Row(Modifier.fillMaxWidth()) {
                 row.forEach { s ->
                     val c = s.color()
                     Column(
-                        Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).clickable { s.go(vm) }.padding(vertical = 10.dp),
+                        Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).clickable { vm.browse(s.loc()) }.padding(vertical = 10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Box(Modifier.size(52.dp).clip(CircleShape).background(c.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {

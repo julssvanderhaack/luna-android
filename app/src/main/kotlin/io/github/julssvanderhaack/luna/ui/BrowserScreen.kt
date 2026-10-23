@@ -202,7 +202,8 @@ fun BrowserScreen(vm: MainViewModel, loc: Loc) {
                             )
                         }
                     },
-                    navigationIcon = { IconButton(onClick = vm::back) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Atrás") } },
+                    // back is the system gesture; the breadcrumbs go up; ☰ goes anywhere
+                    navigationIcon = { DrawerButton() },
                     actions = {
                         IconButton(onClick = { searching = true }) { Icon(Icons.Rounded.Search, "Buscar") }
                         IconButton(onClick = { vm.setGrid(mediaGrid, !grid) }) {
@@ -324,7 +325,9 @@ private fun Breadcrumbs(vm: MainViewModel, loc: Loc, serverTitle: String?) {
             val vol = vm.luna.volumes.of(path)
             val base = vol?.path ?: "/"
             val rest = path.removePrefix(base).split('/').filter { it.isNotEmpty() }
-            listOf((vol?.label ?: "/") to base) + rest.runningFold(base) { acc, p -> "${acc.trimEnd('/')}/$p" }.drop(1).zip(rest) { full, name -> name to full }
+            // "/" first, so the whole tree is one tap away, then the volume by its name
+            val head = if (vol == null) listOf("/" to "/") else listOf("/" to "/", vol.label to base)
+            head + rest.runningFold(base) { acc, p -> "${acc.trimEnd('/')}/$p" }.drop(1).zip(rest) { full, name -> name to full }
         }
         else -> {
             val rest = path.split('/').filter { it.isNotEmpty() }

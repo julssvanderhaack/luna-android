@@ -47,7 +47,13 @@ object LocalVfs : Vfs {
 
     override fun list(dir: String): List<FileEntry> {
         val f = File(dir)
-        val names = f.list() ?: throw IOException(if (!f.exists()) "La carpeta ya no existe" else "Sin permiso para leer esta carpeta")
+        val names = f.list() ?: throw IOException(
+            when {
+                !f.exists() -> "La carpeta ya no existe"
+                dir.startsWith("/storage/") || dir.startsWith("/sdcard") -> "Sin permiso para leer esta carpeta"
+                else -> "Sin permiso para leer esta carpeta.\nEs del sistema: Android solo deja entrar con root."
+            },
+        )
         return names.map { entry(File(f, it)) }
     }
 

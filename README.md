@@ -9,8 +9,14 @@ de «Mis archivos» de Samsung y un menú de pulsación larga con las opciones d
 |---|---|---|
 | ![](docs/capturas/inicio.png) | ![](docs/capturas/menu.png) | ![](docs/capturas/servidor.png) |
 
-## Qué hace (v0.1)
+## Qué hace (v0.2)
 
+- **Menú lateral** (☰): Inicio, Carpeta personal (`/storage/emulated/0`, la «home» del
+  móvil), **Raíz** (`/`), cada USB/SD, los accesos rápidos, favoritos, servidores y ajustes.
+  Desde `/` se baja por el árbol como en el PC (`/storage/emulated/0`, `/system`…); las
+  carpetas que Android no deja listar se completan con las que sí se pueden abrir (`system`,
+  `vendor`, `etc`…) y con el camino a cada volumen (`storage` → `emulated` → `0`); las que
+  Android bloquea (`data`…) no aparecen. Las migas de pan empiezan siempre en `/`.
 - **Inicio**: recientes (sin archivos de apps, ocultos ni `Android/`), accesos rápidos a
   Cámara, Descargas, Imágenes, Vídeos, Audio, Documentos, APK y Comprimidos, almacenamiento
   con espacio libre, favoritos y red.

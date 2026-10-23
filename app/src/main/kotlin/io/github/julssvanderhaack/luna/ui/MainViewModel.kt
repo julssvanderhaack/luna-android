@@ -85,6 +85,13 @@ sealed interface Route {
 /** Copied or cut files waiting for "Pegar". [vfsId] says which file system they're on. */
 data class Clip(val vfsId: String, val entries: List<FileEntry>, val cut: Boolean)
 
+/** The usual top-level folders of an Android root file system. */
+private val ROOT_DIRS = listOf(
+    "acct", "apex", "bin", "cache", "config", "d", "data", "data_mirror", "debug_ramdisk", "dev", "etc",
+    "linkerconfig", "metadata", "mnt", "odm", "odm_dlkm", "oem", "postinstall", "proc", "product",
+    "sdcard", "second_stage_resources", "storage", "sys", "system", "system_dlkm", "system_ext", "vendor", "vendor_dlkm",
+)
+
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     val luna = app as LunaApp
     val themes = luna.themes
@@ -189,10 +196,29 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 .filter { File(it.path).exists() }
                 .let { if (loc.category == Category.RECENT || loc.category.media) it else sortEntries(it, s.sort) }
             else -> {
-                val all = vfs(loc).list(loc.path)
+                val listed = runCatching { vfs(loc).list(loc.path) }
+                val known = if (loc is Loc.Local) mountedChildren(loc.path) else emptyList()
+                val got = listed.getOrElse { if (known.isEmpty()) throw it else emptyList() }
+                val all = got + known.filter { k -> got.none { it.name == k.name } }
                 sortEntries(if (s.showHidden) all else all.filter { !it.hidden }, s.sort)
             }
         }
+    }
+
+    /**
+     * Folders on the way to a mounted volume that sit directly in [dir]. Android
+     * won't let apps list /storage/emulated, so browsing down from "/" would
+     * dead-end before reaching internal storage or a USB drive without these.
+     */
+    private fun mountedChildren(dir: String): List<FileEntry> {
+        val d = dir.trimEnd('/').ifEmpty { "/" }
+        // apps can't list "/" either, but can stat what's in it; only offer what opens
+        val rootDirs = if (d == "/") ROOT_DIRS.map { "/$it" }.filter { File(it).list() != null } else emptyList()
+        return (rootDirs + volumes.value.map { it.path })
+            .flatMap { p -> generateSequence(p) { if (it == "/") null else Paths.parent(it) }.toList() }
+            .filter { it != "/" && Paths.parent(it) == d }
+            .distinct()
+            .map { File(it).let { f -> FileEntry(f.name, f.path, true, 0, f.lastModified()) } }
     }
 
     fun loadRecents() {
