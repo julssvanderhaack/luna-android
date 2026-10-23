@@ -20,18 +20,30 @@ fun formatSize(bytes: Long): String {
     return if (v < 10) String.format(ES, "%.1f %s", v, units[i]) else String.format(ES, "%.0f %s", v, units[i])
 }
 
+/** Formatters and calendars are slow to make and not thread-safe: one set per thread, reused. */
+private class DateTools {
+    val time = SimpleDateFormat("HH:mm", ES)
+    val day = SimpleDateFormat("d MMM", ES)
+    val full = SimpleDateFormat("d MMM yyyy", ES)
+    val c: Calendar = Calendar.getInstance()
+    val n: Calendar = Calendar.getInstance()
+}
+private val dateTools = ThreadLocal.withInitial { DateTools() }
+
 /** Today: "14:32"; yesterday: "ayer"; this year: "12 oct"; otherwise "12 oct 2024". */
 fun formatDate(millis: Long, now: Long = System.currentTimeMillis()): String {
     if (millis <= 0) return ""
-    val c = Calendar.getInstance().apply { timeInMillis = millis }
-    val n = Calendar.getInstance().apply { timeInMillis = now }
+    val t = dateTools.get()!!
+    val c = t.c.apply { timeInMillis = millis }
+    val n = t.n.apply { timeInMillis = now }
     val sameYear = c.get(Calendar.YEAR) == n.get(Calendar.YEAR)
     val dayDiff = n.get(Calendar.DAY_OF_YEAR) - c.get(Calendar.DAY_OF_YEAR)
+    val date = Date(millis)
     return when {
-        sameYear && dayDiff == 0 -> SimpleDateFormat("HH:mm", ES).format(Date(millis))
+        sameYear && dayDiff == 0 -> t.time.format(date)
         sameYear && dayDiff == 1 -> "ayer"
-        sameYear -> SimpleDateFormat("d MMM", ES).format(Date(millis)).trimEnd('.')
-        else -> SimpleDateFormat("d MMM yyyy", ES).format(Date(millis)).replace(".", "")
+        sameYear -> t.day.format(date).trimEnd('.')
+        else -> t.full.format(date).replace(".", "")
     }
 }
 

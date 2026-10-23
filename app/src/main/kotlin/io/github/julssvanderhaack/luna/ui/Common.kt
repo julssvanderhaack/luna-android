@@ -102,7 +102,7 @@ fun FileIcon(e: FileEntry, size: Dp, local: Boolean, modifier: Modifier = Modifi
     } else {
         val c = e.kind.color()
         Box(box.clip(shape).background(c.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-            Icon(e.kind.icon(), null, tint = c, modifier = Modifier.size(if (square) size * 0.45f else size * 0.55f))
+            Icon(e.kind.icon(), null, tint = c, modifier = Modifier.size(if (square) 72.dp else size * 0.55f))
         }
     }
 }

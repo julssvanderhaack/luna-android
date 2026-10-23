@@ -6,6 +6,9 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.attribute.BasicFileAttributes
 
 /**
  * What the browser and the copy engine need from a file system. Every call
@@ -36,14 +39,25 @@ interface Vfs {
 object LocalVfs : Vfs {
     override val id = "local"
 
-    fun entry(f: File) = FileEntry(
-        name = f.name,
-        path = f.path,
-        isDir = f.isDirectory,
-        size = if (f.isFile) f.length() else 0,
-        modified = f.lastModified(),
-        isLink = runCatching { java.nio.file.Files.isSymbolicLink(f.toPath()) }.getOrDefault(false),
-    )
+    /** One lstat per file (plus a stat for links) instead of the five calls java.io.File makes. */
+    fun entry(f: File): FileEntry {
+        val p = f.toPath()
+        val own = try {
+            Files.readAttributes(p, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        } catch (_: Exception) {
+            return FileEntry(f.name, f.path, false, 0, 0)
+        }
+        // a link shows what it points to; a broken one stays a plain entry
+        val a = if (own.isSymbolicLink) runCatching { Files.readAttributes(p, BasicFileAttributes::class.java) }.getOrNull() ?: own else own
+        return FileEntry(
+            name = f.name,
+            path = f.path,
+            isDir = a.isDirectory,
+            size = if (a.isRegularFile) a.size() else 0,
+            modified = a.lastModifiedTime().toMillis(),
+            isLink = own.isSymbolicLink,
+        )
+    }
 
     override fun list(dir: String): List<FileEntry> {
         val f = File(dir)

@@ -14,8 +14,8 @@ android {
         // 30: "all files access", the only way to reach USB drives by path
         minSdk = 30
         targetSdk = 37
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
     }
 
     // The release key lives outside the repo (~/.android/luna-release.properties):
@@ -54,6 +54,7 @@ android {
 
 dependencies {
     implementation(libs.androidx.core)
+    implementation(libs.androidx.profileinstaller)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

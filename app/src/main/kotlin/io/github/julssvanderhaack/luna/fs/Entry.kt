@@ -9,10 +9,13 @@ data class FileEntry(
     /** Milliseconds since the epoch. */
     val modified: Long,
     val isLink: Boolean = false,
+    /** MediaStore id when the file is indexed there (0 = unknown): its thumbnail is already made. */
+    val mediaId: Long = 0,
 ) {
     val hidden get() = name.startsWith('.')
     val ext get() = if (isDir) "" else name.substringAfterLast('.', "").lowercase()
-    val kind get() = if (isDir) Kind.FOLDER else Kind.of(name)
+    // read on every frame by the lists, so worked out once
+    val kind: Kind = if (isDir) Kind.FOLDER else Kind.of(name)
     val parent get() = Paths.parent(path)
 }
 

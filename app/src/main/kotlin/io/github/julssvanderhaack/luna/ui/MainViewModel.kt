@@ -4,6 +4,7 @@ import android.app.Application
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Environment
+import android.util.LruCache
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -190,7 +191,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         } else loc
     }
 
+    /** Last listing of each folder: shown at once when you come back, while a fresh one loads. */
+    private val listings = LruCache<String, List<FileEntry>>(48)
+
+    private fun listingKey(loc: Loc, s: AppSettings) = "${loc.key}|${s.showHidden}|${s.sort}"
+
+    fun cachedList(loc: Loc, s: AppSettings): List<FileEntry>? = listings.get(listingKey(loc, s))
+
     suspend fun list(loc: Loc, s: AppSettings): List<FileEntry> = withContext(Dispatchers.IO) {
+        listUncached(loc, s).also { listings.put(listingKey(loc, s), it) }
+    }
+
+    private fun listUncached(loc: Loc, s: AppSettings): List<FileEntry> =
         when (loc) {
             is Loc.Media -> MediaQueries.query(getApplication(), loc.category)
                 .filter { File(it.path).exists() }
@@ -203,7 +215,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 sortEntries(if (s.showHidden) all else all.filter { !it.hidden }, s.sort)
             }
         }
-    }
 
     /**
      * Folders on the way to a mounted volume that sit directly in [dir]. Android

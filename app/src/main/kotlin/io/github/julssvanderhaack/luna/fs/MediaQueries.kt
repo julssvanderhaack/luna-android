@@ -46,7 +46,7 @@ object MediaQueries {
         val (where, args) = selection(c)
         val uri = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
         @Suppress("DEPRECATION")
-        val cols = arrayOf(FileColumns.DATA, FileColumns.DISPLAY_NAME, FileColumns.SIZE, FileColumns.DATE_MODIFIED)
+        val cols = arrayOf(FileColumns.DATA, FileColumns.DISPLAY_NAME, FileColumns.SIZE, FileColumns.DATE_MODIFIED, FileColumns._ID)
         val q = Bundle().apply {
             putString(ContentResolver.QUERY_ARG_SQL_SELECTION, where)
             putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, args)
@@ -63,6 +63,7 @@ object MediaQueries {
                     isDir = false,
                     size = cur.getLong(2),
                     modified = cur.getLong(3) * 1000,
+                    mediaId = cur.getLong(4),
                 )
             }
         }

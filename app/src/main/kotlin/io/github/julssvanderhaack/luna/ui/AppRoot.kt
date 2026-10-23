@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,6 +68,15 @@ fun AppRoot(vm: MainViewModel) {
             return@Surface
         }
         val route = vm.stack.last()
+        // each screen in the back stack keeps its saveable state (scroll position…) while it's covered
+        val saved = rememberSaveableStateHolder()
+        val keys = vm.stack.mapIndexed { i, r -> "$i:$r" }
+        val live = remember { mutableSetOf<String>() }
+        LaunchedEffect(keys) {
+            (live - keys.toSet()).forEach { saved.removeState(it) }
+            live.clear()
+            live += keys
+        }
         BackHandler(enabled = vm.stack.size > 1) { vm.back() }
         val progress by vm.progress.collectAsStateWithLifecycle()
         val drawer = rememberDrawerState(DrawerValue.Closed)
@@ -80,6 +90,7 @@ fun AppRoot(vm: MainViewModel) {
         ) {
         CompositionLocalProvider(LocalOpenDrawer provides { scope.launch { drawer.open() } }) {
         Box(Modifier.fillMaxSize()) {
+            saved.SaveableStateProvider(keys.last()) {
             when (route) {
                 Route.Home -> HomeScreen(vm)
                 is Route.Browse -> BrowserScreen(vm, route.loc)
@@ -88,6 +99,7 @@ fun AppRoot(vm: MainViewModel) {
                 Route.Settings -> SettingsScreen(vm)
                 Route.Themes -> ThemesScreen(vm)
                 is Route.ThemeEditor -> ThemeEditorScreen(vm, route.base, route.editing)
+            }
             }
             Column(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 72.dp)) {
                 progress?.let { ProgressCard(it, vm::cancelOp) }

@@ -6,6 +6,7 @@ import io.github.julssvanderhaack.luna.remote.ServerStore
 import io.github.julssvanderhaack.luna.remote.Sftp
 import io.github.julssvanderhaack.luna.settings.Settings
 import io.github.julssvanderhaack.luna.theme.ThemeRepository
+import io.github.julssvanderhaack.luna.ui.Thumbs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -27,6 +28,7 @@ class LunaApp : Application() {
         OsUtils.setAndroid(true)
         System.setProperty("user.home", filesDir.path)
         PathUtils.setUserHomeFolderResolver { filesDir.toPath() }
+        Thumbs.init(this)
         settings = Settings(this)
         themes = ThemeRepository(this)
         volumes = Volumes(this)

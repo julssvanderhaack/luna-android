@@ -9,7 +9,7 @@ de «Mis archivos» de Samsung y un menú de pulsación larga con las opciones d
 |---|---|---|
 | ![](docs/capturas/inicio.png) | ![](docs/capturas/menu.png) | ![](docs/capturas/servidor.png) |
 
-## Qué hace (v0.2)
+## Qué hace (v0.3)
 
 - **Menú lateral** (☰): Inicio, Carpeta personal (`/storage/emulated/0`, la «home» del
   móvil), **Raíz** (`/`), cada USB/SD, los accesos rápidos, favoritos, servidores y ajustes.
@@ -41,6 +41,37 @@ de «Mis archivos» de Samsung y un menú de pulsación larga con las opciones d
   sin terminal ni redirección de puertos. Notificación con «Detener».
 - Los 27 temas de Omarchy, editor de temas e importar/exportar `colors.toml` (de Sonata). Los
   colores de cada tipo de archivo salen de los colores de terminal del tema.
+
+## Rápido en cualquier móvil (v0.3)
+
+- **Miniaturas**, de la fuente más rápida a la más lenta:
+  1. memoria (tamaño según la RAM que Android da a la app);
+  2. la miniatura que Android ya tiene (`Pictures/.thumbnails`), que la galería suele haber
+     hecho: una carpeta de la cámara aparece casi al instante;
+  3. la vista previa EXIF que llevan las fotos de cámara (unos 512×384), sin descodificar
+     megas de foto;
+  4. la caché en disco de Luna (`cache/thumbs`, hasta 200 MB), así cada archivo se
+     descodifica una sola vez;
+  5. descodificar el archivo, ya al tamaño de la celda y no mayor, en hilos de baja
+     prioridad para que el desplazamiento no espere.
+- **Carpetas grandes**: una sola llamada al sistema por archivo en vez de cinco y el nombre
+  se normaliza una vez, no en cada comparación al ordenar. Una carpeta de 2000 archivos pasa
+  de ~4,3 s a ~0,2 s en el emulador.
+- **Volver atrás es instantáneo**: se enseña la última lista de la carpeta mientras se lee
+  la nueva y se recupera la posición en la que estabas. Sin ruedita de carga si la carpeta
+  tarda menos de un cuarto de segundo.
+- `profileinstaller`: el perfil de arranque de Compose se compila también al instalar el APK
+  a mano (Google Play lo hace solo).
+
+Medido en el emulador (x86, gráficos por software, más lento que cualquier móvil), carpeta
+con fotos de 12 MP:
+
+| | v0.2 | v0.3 |
+|---|---|---|
+| Carpeta de 2000 archivos | 4,3 s | 0,2–0,5 s |
+| 10.ª miniatura, fotos de cámara, primera vez | 5,6 s | 0,5 s |
+| 10.ª miniatura, segunda vez | 5,6 s | 0,16 s |
+| Arranque en frío (mediana) | 2,1 s | 1,9 s |
 
 ## Compilar
 

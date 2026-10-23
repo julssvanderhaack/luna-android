@@ -116,7 +116,8 @@ fun BrowserScreen(vm: MainViewModel, loc: Loc) {
     val server = (loc as? Loc.Remote)?.let { l -> servers.firstOrNull { it.id == l.serverId } }
     val actions = remember(loc) { FileActions() }
 
-    var state by remember(loc) { mutableStateOf<ListState>(ListState.Loading) }
+    // coming back to a folder shows its last listing straight away; the fresh one replaces it
+    var state by remember(loc) { mutableStateOf(vm.cachedList(loc, settings)?.let { ListState.Ready(it) } ?: ListState.Loading) }
     var attempt by remember(loc) { mutableIntStateOf(0) }
     var refreshing by remember(loc) { mutableStateOf(false) }
     var typedOnce by remember(loc) { mutableStateOf(false) }
@@ -154,17 +155,19 @@ fun BrowserScreen(vm: MainViewModel, loc: Loc) {
     }
 
     val all = (state as? ListState.Ready)?.entries.orEmpty()
-    val shown = when {
-        !searching || query.isBlank() -> all
-        deep != null -> deep!!
-        else -> fold(query.trim()).let { q -> all.filter { fold(it.name).contains(q) } }
+    val shown = remember(all, searching, query, deep) {
+        when {
+            !searching || query.isBlank() -> all
+            deep != null -> deep!!
+            else -> fold(query.trim()).let { q -> all.filter { fold(it.name).contains(q) } }
+        }
     }
     val flat = loc is Loc.Media || (searching && deep != null)
     val mediaGrid = loc is Loc.Media && loc.category.media
     val grid = if (mediaGrid) settings.gridMedia else settings.gridFiles
     val selection = vm.selection
     val selecting = selection.isNotEmpty()
-    val selected = shown.filter { it.path in selection }
+    val selected = remember(shown, selection) { shown.filter { it.path in selection } }
 
     BackHandler(enabled = selecting) { vm.selection = emptySet() }
     BackHandler(enabled = searching && !selecting) { searching = false; query = "" }
@@ -237,7 +240,7 @@ fun BrowserScreen(vm: MainViewModel, loc: Loc) {
                 modifier = Modifier.fillMaxSize(),
             ) {
                 when (val s = state) {
-                    ListState.Loading -> Centered { CircularProgressIndicator() }
+                    ListState.Loading -> Centered { DelayedSpinner() }
                     is ListState.Failed -> Centered {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(s.message, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -489,7 +492,8 @@ private fun EntryGrid(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box {
-                    FileIcon(e, 160.dp, local, square = true, corner = if (showNames) 10.dp else 4.dp)
+                    // decoded at about the cell's width (3–4 columns on a phone), not more
+                    FileIcon(e, if (showNames) 128.dp else 112.dp, local, square = true, corner = if (showNames) 10.dp else 4.dp)
                     if (e.kind == Kind.VIDEO) Icon(
                         Icons.Rounded.PlayCircle, null, tint = Color.White.copy(alpha = 0.9f),
                         modifier = Modifier.align(Alignment.Center).size(30.dp),
@@ -557,4 +561,15 @@ private fun PasteBar(count: Int, cut: Boolean, onCancel: () -> Unit, onPaste: ()
             }
         }
     }
+}
+
+/** Most folders load in a blink: only show a spinner if it takes long enough to notice. */
+@Composable
+private fun DelayedSpinner() {
+    var show by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(250)
+        show = true
+    }
+    if (show) CircularProgressIndicator()
 }

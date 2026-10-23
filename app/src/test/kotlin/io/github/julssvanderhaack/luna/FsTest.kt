@@ -7,6 +7,7 @@ import io.github.julssvanderhaack.luna.fs.LocalVfs
 import io.github.julssvanderhaack.luna.fs.Paths
 import io.github.julssvanderhaack.luna.fs.SortBy
 import io.github.julssvanderhaack.luna.fs.SortOrder
+import io.github.julssvanderhaack.luna.fs.fold
 import io.github.julssvanderhaack.luna.fs.naturalCompare
 import io.github.julssvanderhaack.luna.fs.sortEntries
 import io.github.julssvanderhaack.luna.ui.formatSize
@@ -31,6 +32,39 @@ class FsTest {
         val names = listOf("foto 10.jpg", "Foto 2.jpg", "álbum", "Zeta", "foto 1.jpg", "abeja")
         assertEquals(listOf("abeja", "álbum", "foto 1.jpg", "Foto 2.jpg", "foto 10.jpg", "Zeta"), names.sortedWith(::naturalCompare))
         assertEquals(0, naturalCompare("Canción", "cancion"))
+    }
+
+    @Test
+    fun foldMatchesTheSlowPath() {
+        for (n in listOf("FOTO 1.JPG", "Álbum Canción", "ÑANDÚ", "plain ascii", "Ça va", "")) {
+            val slow = java.text.Normalizer.normalize(n.lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "")
+            assertEquals(slow, fold(n))
+        }
+    }
+
+    @Test
+    fun sortingByPrecomputedKeysMatchesNaturalOrder() {
+        val names = (1..300).map { listOf("Foto $it.jpg", "álbum $it", "Canción ${300 - it}.mp3", "zeta_$it")[it % 4] }
+        val entries = names.map { FileEntry(it, "/$it", false, 0, 0) }
+        assertEquals(names.sortedWith(::naturalCompare), sortEntries(entries, SortOrder()).map { it.name })
+    }
+
+    @Test
+    fun entryReadsAttributesAndLinks() {
+        val dir = tmp.newFolder("d")
+        val f = File(dir, "a.txt").apply { writeText("hola") }
+        f.setLastModified(1_700_000_000_123)
+        val e = LocalVfs.entry(f)
+        assertEquals(4, e.size)
+        assertFalse(e.isDir)
+        assertEquals(1_700_000_000_000, e.modified / 1000 * 1000)
+        assertEquals(Kind.TEXT, e.kind)
+        val link = File(dir, "enlace")
+        java.nio.file.Files.createSymbolicLink(link.toPath(), dir.toPath())
+        LocalVfs.entry(link).let { assertTrue(it.isLink && it.isDir) }
+        val broken = File(dir, "roto")
+        java.nio.file.Files.createSymbolicLink(broken.toPath(), File(dir, "no existe").toPath())
+        LocalVfs.entry(broken).let { assertTrue(it.isLink && !it.isDir) }
     }
 
     @Test

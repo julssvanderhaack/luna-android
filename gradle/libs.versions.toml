@@ -8,6 +8,7 @@ lifecycle = "2.11.0"
 datastore = "1.3.0"
 sshd = "2.20.0"
 eddsa = "0.3.0"
+profileinstaller = "1.4.1"
 junit = "4.13.2"
 orgJson = "20260814"
 
@@ -27,6 +28,8 @@ compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-material-icons = { module = "androidx.compose.material:material-icons-extended" }
 sshd-core = { module = "org.apache.sshd:sshd-core", version.ref = "sshd" }
 sshd-sftp = { module = "org.apache.sshd:sshd-sftp", version.ref = "sshd" }
+# compiles the bundled baseline profiles on sideloaded installs too (Play does it on its own)
+androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
 eddsa = { module = "net.i2p.crypto:eddsa", version.ref = "eddsa" }
 junit = { module = "junit:junit", version.ref = "junit" }
 # Android ships org.json; the JVM unit tests need the real one
