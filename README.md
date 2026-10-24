@@ -9,7 +9,7 @@ de «Mis archivos» de Samsung y un menú de pulsación larga con las opciones d
 |---|---|---|
 | ![](docs/capturas/inicio.png) | ![](docs/capturas/menu.png) | ![](docs/capturas/servidor.png) |
 
-## Qué hace (v0.3)
+## Qué hace (v0.4)
 
 - **Menú lateral** (☰): Inicio, Carpeta personal (`/storage/emulated/0`, la «home» del
   móvil), **Raíz** (`/`), cada USB/SD, los accesos rápidos, favoritos, servidores y ajustes.
@@ -32,6 +32,14 @@ de «Mis archivos» de Samsung y un menú de pulsación larga con las opciones d
 - Lista o cuadrícula (recordado aparte para fotos/vídeos y para carpetas), ordenar por
   nombre natural / fecha / tamaño / tipo, ocultos, búsqueda en subcarpetas sin distinguir
   acentos, migas de pan, tirar para recargar. Miniaturas de fotos, vídeos, carátulas, PDF y APK.
+- **Visor de fotos propio**: tocar una foto la abre en Luna, sin pasar por la galería. Se
+  desliza entre las fotos de la carpeta, se amplía pellizcando o con doble toque (hasta 8×) y
+  los GIF/WebP animados se mueven. JPEG, PNG, WebP, GIF, HEIC, BMP, ICO, DNG y AVIF; también
+  desde servidores SFTP (hasta 100 MB).
+- **Propiedades con metadatos**: en fotos, resolución, formato, compresión (calidad JPEG
+  estimada, progresiva, submuestreo; PNG/WebP con o sin pérdida), profundidad, EXIF de la
+  cámara y GPS con «Ver en el mapa»; en vídeo y audio, duración, contenedor, bitrate y, por
+  pista, códec, resolución, fps, HDR, frecuencia, canales e idioma, además de las etiquetas.
 - **Cliente SFTP**: servidores guardados con contraseña (o pedida cada vez) o clave privada
   (`id_ed25519`, `id_rsa`… con frase opcional). La huella del servidor se enseña la primera
   vez y se avisa si cambia. Los archivos remotos se abren descargándolos a la caché.
