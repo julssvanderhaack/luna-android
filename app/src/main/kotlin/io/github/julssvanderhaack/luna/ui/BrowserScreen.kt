@@ -166,10 +166,10 @@ fun BrowserScreen(vm: MainViewModel, loc: Loc) {
     val mediaGrid = loc is Loc.Media && loc.category.media
     val grid = if (mediaGrid) settings.gridMedia else settings.gridFiles
     val selection = vm.selection
-    val selecting = selection.isNotEmpty()
+    val selecting = vm.selecting
     val selected = remember(shown, selection) { shown.filter { it.path in selection } }
 
-    BackHandler(enabled = selecting) { vm.selection = emptySet() }
+    BackHandler(enabled = selecting) { vm.clearSelection() }
     BackHandler(enabled = searching && !selecting) { searching = false; query = "" }
 
     fun toggle(e: FileEntry) {
@@ -187,8 +187,16 @@ fun BrowserScreen(vm: MainViewModel, loc: Loc) {
         topBar = {
             when {
                 selecting -> TopAppBar(
-                    title = { Text("${selection.size} seleccionados") },
-                    navigationIcon = { IconButton(onClick = { vm.selection = emptySet() }) { Icon(Icons.Rounded.Close, "Salir de la selección") } },
+                    title = {
+                        Text(
+                            when (selection.size) {
+                                0 -> "Toca para seleccionar"
+                                1 -> "1 seleccionado"
+                                else -> "${selection.size} seleccionados"
+                            },
+                        )
+                    },
+                    navigationIcon = { IconButton(onClick = { vm.clearSelection() }) { Icon(Icons.Rounded.Close, "Salir de la selección") } },
                     actions = {
                         IconButton(onClick = { vm.selection = shown.map { it.path }.toSet() }) { Icon(Icons.Rounded.SelectAll, "Seleccionar todo") }
                     },
@@ -220,7 +228,8 @@ fun BrowserScreen(vm: MainViewModel, loc: Loc) {
         },
         bottomBar = {
             when {
-                selecting -> SelectionBar(
+                // nothing picked yet: no actions to offer
+                selecting -> if (selected.isNotEmpty()) SelectionBar(
                     canShare = selected.none { it.isDir },
                     onCopy = { vm.copy(loc, selected, cut = false) },
                     onCut = { vm.copy(loc, selected, cut = true) },
@@ -373,6 +382,7 @@ private fun FolderMenu(vm: MainViewModel, loc: Loc, s: AppSettings, actions: Fil
                 DropdownMenuItem({ Text("Nuevo archivo vacío") }, { open = false; actions.dialog = FileDialog.Create(folder = false) })
                 HorizontalDivider()
             }
+            DropdownMenuItem({ Text("Selección múltiple") }, { open = false; vm.selectMode = true })
             DropdownMenuItem({ Text("Seleccionar todo") }, { open = false; onSelectAll() })
             if (loc !is Loc.Media || !loc.category.media) {
                 HorizontalDivider()

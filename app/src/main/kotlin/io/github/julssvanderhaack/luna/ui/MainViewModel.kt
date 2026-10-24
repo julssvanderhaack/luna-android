@@ -134,8 +134,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 8)
     val messages: SharedFlow<String> = _messages
 
-    /** Paths selected in the current list; empty = not in selection mode. */
+    /** Paths selected in the current list. */
     var selection by mutableStateOf(emptySet<String>())
+
+    /** "Selección múltiple": selection mode even with nothing picked yet, so taps select instead of open. */
+    var selectMode by mutableStateOf(false)
+
+    val selecting get() = selectMode || selection.isNotEmpty()
+
+    fun clearSelection() {
+        selection = emptySet()
+        selectMode = false
+    }
 
     init {
         viewModelScope.launch { themes.load() }
@@ -148,23 +158,23 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     // ---- navigation ----
 
     fun open(r: Route) {
-        selection = emptySet()
+        clearSelection()
         stack.add(r)
     }
 
     fun back() {
-        selection = emptySet()
+        clearSelection()
         if (stack.size > 1) stack.removeAt(stack.lastIndex)
     }
 
     fun home() {
-        selection = emptySet()
+        clearSelection()
         while (stack.size > 1) stack.removeAt(stack.lastIndex)
     }
 
     /** Opens a folder. Going up to one already in the history pops back to it instead of piling up. */
     fun browse(loc: Loc) {
-        selection = emptySet()
+        clearSelection()
         val i = stack.indexOfLast { it is Route.Browse && it.loc == loc }
         if (i >= 0) {
             while (stack.size > i + 1) stack.removeAt(stack.lastIndex)
@@ -379,7 +389,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun copy(loc: Loc, entries: List<FileEntry>, cut: Boolean) {
         _clip.value = Clip(vfsIdOf(loc), entries, cut)
-        selection = emptySet()
+        clearSelection()
     }
 
     fun clearClip() {
@@ -402,7 +412,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun delete(loc: Loc, entries: List<FileEntry>) {
-        selection = emptySet()
+        clearSelection()
         run { ops ->
             val v = vfs(loc)
             ops.delete(v, entries)
@@ -412,7 +422,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun rename(loc: Loc, e: FileEntry, newName: String) {
-        selection = emptySet()
+        clearSelection()
         run {
             val v = vfs(loc)
             val target = Paths.join(e.parent, newName)
@@ -432,7 +442,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun compress(loc: Loc, entries: List<FileEntry>, name: String) {
-        selection = emptySet()
+        clearSelection()
         run { ops ->
             val v = vfs(loc)
             val dir = entries.first().parent
