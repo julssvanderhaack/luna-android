@@ -26,7 +26,9 @@ de «Mis archivos» de Samsung y un menú de pulsación larga con las opciones d
 - **Pulsación larga** (o ⋮ en cada fila): Abrir, Abrir con…, **Abrir como…** (texto, imagen,
   audio, vídeo, PDF u otro), Compartir, Seleccionar, Copiar, Cortar, Renombrar, Eliminar,
   Extraer aquí (zip), Comprimir…, favoritos, Abrir la carpeta que lo contiene, Copiar ruta y
-  Propiedades. Selección múltiple con barra de Copiar / Mover / Compartir / Eliminar / Más.
+  Propiedades. Selección múltiple con barra de Copiar / Mover / Compartir / Eliminar / Más;
+  también desde ⋮ → **Selección múltiple**, que entra en el modo sin nada marcado para ir
+  tocando archivos, o ⋮ → Seleccionar todo.
 - Copiar y mover entre cualquier sitio: interno ↔ USB ↔ servidores SFTP. Los nombres que ya
   existen pasan a «nombre (2)», como al pegar en el escritorio. Progreso con cancelar.
 - Lista o cuadrícula (recordado aparte para fotos/vídeos y para carpetas), ordenar por
