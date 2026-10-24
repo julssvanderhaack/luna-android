@@ -1,6 +1,13 @@
 package io.github.julssvanderhaack.luna.ui
 
+import android.content.Intent
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,8 +48,13 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import io.github.julssvanderhaack.luna.fs.FileEntry
+import io.github.julssvanderhaack.luna.fs.InfoSection
+import io.github.julssvanderhaack.luna.fs.Kind
+import io.github.julssvanderhaack.luna.fs.MediaInfo
 import io.github.julssvanderhaack.luna.fs.Mime
 import io.github.julssvanderhaack.luna.fs.Tally
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 private val BAD_NAME = Regex("[/\\u0000]")
@@ -147,21 +159,56 @@ fun PropertiesDialog(vm: MainViewModel, loc: Loc, entries: List<FileEntry>, onDi
             if (single != null && !File(single.path).canWrite()) add("Permisos" to "Solo lectura")
         }
     }
+    // photos, videos and songs: what the file itself says (remote ones are fetched first, if not huge)
+    val isMedia = single != null && !single.isDir && single.kind in setOf(Kind.IMAGE, Kind.VIDEO, Kind.AUDIO)
+    val media by produceState<List<InfoSection>?>(null, single) {
+        if (isMedia) value = withContext(Dispatchers.IO) {
+            vm.mediaFile(loc, single, ImageViewer.MAX_REMOTE)?.let { MediaInfo.read(it) }.orEmpty()
+        }
+    }
+    val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Propiedades") },
         text = {
-            Column {
-                rows.forEach { (k, v) ->
-                    Row(Modifier.padding(vertical = 5.dp)) {
-                        Text(k, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(110.dp))
-                        Text(v, style = MaterialTheme.typography.bodyMedium)
+            SelectionContainer {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    rows.forEach { (k, v) -> PropertyRow(k, v) }
+                    if (isMedia) when (val m = media) {
+                        null -> Text(
+                            "Leyendo los metadatos…", style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp),
+                        )
+                        else -> m.forEach { section ->
+                            Text(
+                                section.title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
+                            )
+                            section.rows.forEach { (k, v) -> PropertyRow(k, v) }
+                            section.geo?.let { (lat, lon) ->
+                                TextButton(
+                                    onClick = {
+                                        val uri = "geo:$lat,$lon?q=$lat,$lon".toUri()
+                                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                                    },
+                                    contentPadding = PaddingValues(0.dp),
+                                ) { Text("Ver en el mapa") }
+                            }
+                        }
                     }
                 }
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Cerrar") } },
     )
+}
+
+@Composable
+private fun PropertyRow(k: String, v: String) {
+    Row(Modifier.padding(vertical = 5.dp)) {
+        Text(k, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(110.dp))
+        Text(v, style = MaterialTheme.typography.bodyMedium)
+    }
 }
 
 @Composable

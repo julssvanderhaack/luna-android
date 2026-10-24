@@ -281,7 +281,7 @@ fun BrowserScreen(vm: MainViewModel, loc: Loc) {
                                 )
                             }
                         } else {
-                            val onClick = { e: FileEntry -> if (selecting) toggle(e) else openEntry(vm, context, loc, e) }
+                            val onClick = { e: FileEntry -> if (selecting) toggle(e) else openEntry(vm, context, loc, e, shown) }
                             val onMenu = { e: FileEntry -> if (selecting) toggle(e) else actions.sheet = listOf(e) }
                             if (grid) EntryGrid(shown, selection, loc !is Loc.Remote, showNames = !mediaGrid, onClick, onMenu)
                             else EntryList(shown, selection, loc !is Loc.Remote, flat, onClick, onMenu) { actions.sheet = listOf(it) }
@@ -565,7 +565,7 @@ private fun PasteBar(count: Int, cut: Boolean, onCancel: () -> Unit, onPaste: ()
 
 /** Most folders load in a blink: only show a spinner if it takes long enough to notice. */
 @Composable
-private fun DelayedSpinner() {
+fun DelayedSpinner() {
     var show by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         delay(250)

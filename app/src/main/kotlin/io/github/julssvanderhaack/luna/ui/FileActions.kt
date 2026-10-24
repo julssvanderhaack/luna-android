@@ -76,10 +76,19 @@ fun Loc.at(path: String): Loc = when (this) {
     else -> Loc.Local(path)
 }
 
-/** Tap on an entry: folders open in Luna, files in their default app. */
-fun openEntry(vm: MainViewModel, context: Context, loc: Loc, e: FileEntry) {
-    if (e.isDir) vm.browse(loc.at(e.path))
-    else vm.localFiles(loc, listOf(e)) { Opener.open(context, it.first()) }
+/**
+ * Tap on an entry: folders and photos open in Luna (swiping through the other
+ * photos in [siblings]), other files in their default app.
+ */
+fun openEntry(vm: MainViewModel, context: Context, loc: Loc, e: FileEntry, siblings: List<FileEntry> = listOf(e)) {
+    when {
+        e.isDir -> vm.browse(loc.at(e.path))
+        ImageViewer.canShow(e) && !(loc is Loc.Remote && e.size > ImageViewer.MAX_REMOTE) -> {
+            val images = siblings.filter { ImageViewer.canShow(it) }.ifEmpty { listOf(e) }
+            vm.open(Route.Viewer(loc, images, images.indexOfFirst { it.path == e.path }.coerceAtLeast(0)))
+        }
+        else -> vm.localFiles(loc, listOf(e)) { Opener.open(context, it.first()) }
+    }
 }
 
 private fun copyText(context: Context, text: String) {

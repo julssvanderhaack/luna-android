@@ -132,7 +132,7 @@ fun HomeScreen(vm: MainViewModel) {
                 SectionTitle("Recientes") {
                     TextButton(onClick = { vm.browse(Loc.Media(Category.RECENT)) }) { Text("Ver todos") }
                 }
-                RecentStrip(recents, onOpen = { openEntry(vm, context, Loc.Media(Category.RECENT), it) }) { recentActions.sheet = listOf(it) }
+                RecentStrip(recents, onOpen = { openEntry(vm, context, Loc.Media(Category.RECENT), it, recents.orEmpty()) }) { recentActions.sheet = listOf(it) }
             }
             item {
                 SectionTitle("Accesos rápidos")

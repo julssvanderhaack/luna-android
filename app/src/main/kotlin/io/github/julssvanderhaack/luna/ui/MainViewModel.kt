@@ -81,6 +81,14 @@ sealed interface Route {
     data object Settings : Route
     data object Themes : Route
     data class ThemeEditor(val base: String, val editing: Boolean) : Route
+
+    /**
+     * Luna's own photo viewer over [images], starting at [start]. Not a data class:
+     * the back stack keys screens by toString, and a whole folder in there would be slow.
+     */
+    class Viewer(val loc: Loc, val images: List<FileEntry>, val start: Int) : Route {
+        override fun toString() = "Viewer(${loc.key}|${images.getOrNull(start)?.path})"
+    }
 }
 
 /** Copied or cut files waiting for "Pegar". [vfsId] says which file system they're on. */
@@ -469,6 +477,27 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             withContext(Dispatchers.Main) { then(out) }
             null
         }
+    }
+
+    /**
+     * A local copy of [e] for the viewer and Propiedades, without the progress card.
+     * Remote files land in the cache and are fetched again only when they changed;
+     * null when bigger than [maxBytes] or unreachable.
+     */
+    suspend fun mediaFile(loc: Loc, e: FileEntry, maxBytes: Long = Long.MAX_VALUE): File? = withContext(Dispatchers.IO) {
+        if (loc !is Loc.Remote) return@withContext File(e.path)
+        if (e.size > maxBytes) return@withContext null
+        runCatching {
+            val target = File(getApplication<Application>().cacheDir, "sftp/${loc.serverId}/${e.path.trimStart('/')}")
+            if (target.length() != e.size || target.lastModified() != e.modified) {
+                target.parentFile?.mkdirs()
+                val part = File(target.path + ".part")
+                vfs(loc).openRead(e.path).use { input -> part.outputStream().use { input.copyTo(it) } }
+                part.renameTo(target)
+                if (e.modified > 0) target.setLastModified(e.modified)
+            }
+            target
+        }.getOrNull()
     }
 
     /** "Descargar": remote files to the phone's Download folder. */

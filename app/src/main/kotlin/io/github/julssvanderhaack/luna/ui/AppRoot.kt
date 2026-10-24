@@ -99,6 +99,7 @@ fun AppRoot(vm: MainViewModel) {
                 Route.Settings -> SettingsScreen(vm)
                 Route.Themes -> ThemesScreen(vm)
                 is Route.ThemeEditor -> ThemeEditorScreen(vm, route.base, route.editing)
+                is Route.Viewer -> ViewerScreen(vm, route)
             }
             }
             Column(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 72.dp)) {
