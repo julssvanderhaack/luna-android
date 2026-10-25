@@ -48,7 +48,9 @@ de «Mis archivos» de Samsung y un menú de pulsación larga con las opciones d
 - **Servidor SFTP en el móvil** para que el PC entre: `sftp://luna@<ip>:2222/` en Nautilus o
   en Luna de escritorio, o `sftp -P 2222 luna@<ip>`. Contraseña aleatoria fácil de teclear,
   claves públicas autorizadas, carpeta raíz (interno o un USB), modo solo lectura. Solo SFTP:
-  sin terminal ni redirección de puertos. Notificación con «Detener».
+  sin terminal ni redirección de puertos. Notificación con «Detener». Mientras está
+  encendido se anuncia en la red (mDNS, `_sftp-ssh._tcp`): Luna de escritorio lo muestra
+  solo en *Red* como «Luna en <tu móvil>».
 - Los 27 temas de Omarchy, editor de temas e importar/exportar `colors.toml` (de Sonata). Los
   colores de cada tipo de archivo salen de los colores de terminal del tema.
 

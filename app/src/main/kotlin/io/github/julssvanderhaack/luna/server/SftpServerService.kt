@@ -8,9 +8,13 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.nsd.NsdManager
+import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.provider.Settings
 import io.github.julssvanderhaack.luna.LunaApp
 import io.github.julssvanderhaack.luna.MainActivity
 import io.github.julssvanderhaack.luna.R
@@ -51,6 +55,7 @@ class SftpServerService : Service() {
     private var server: SshServer? = null
     private var wifiLock: WifiManager.WifiLock? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var announcement: NsdManager.RegistrationListener? = null
     private val clients = AtomicInteger()
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -77,6 +82,7 @@ class SftpServerService : Service() {
             server = sshd
             val fp = sshd.keyPairProvider.loadKeys(null).firstOrNull()?.public?.let { KeyUtils.getFingerPrint(it) }.orEmpty()
             holdLocks()
+            announce(cfg.port, cfg.user)
             _state.value = ServerState(
                 running = true, port = cfg.port, user = cfg.user, addresses = addresses(), fingerprint = fp,
             )
@@ -100,7 +106,36 @@ class SftpServerService : Service() {
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "luna:sftp").apply { acquire() }
     }
 
+    /**
+     * Tells the local network the server is here (mDNS, _sftp-ssh._tcp), so
+     * Luna on the PC lists the phone under Red by itself. "luna=1" marks it
+     * as ours and "user" saves typing it; gone again when the server stops.
+     */
+    private fun announce(port: Int, user: String) {
+        val name = Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)?.takeIf { it.isNotBlank() } ?: Build.MODEL
+        val info = NsdServiceInfo().apply {
+            serviceName = "Luna en $name"
+            serviceType = "_sftp-ssh._tcp"
+            setPort(port)
+            setAttribute("luna", "1")
+            setAttribute("user", user)
+        }
+        val listener = object : NsdManager.RegistrationListener {
+            override fun onServiceRegistered(info: NsdServiceInfo) {}
+            override fun onRegistrationFailed(info: NsdServiceInfo, errorCode: Int) {}
+            override fun onServiceUnregistered(info: NsdServiceInfo) {}
+            override fun onUnregistrationFailed(info: NsdServiceInfo, errorCode: Int) {}
+        }
+        // not being found on the network is no reason to fail the server
+        runCatching {
+            getSystemService(NsdManager::class.java).registerService(info, NsdManager.PROTOCOL_DNS_SD, listener)
+            announcement = listener
+        }
+    }
+
     override fun onDestroy() {
+        announcement?.let { runCatching { getSystemService(NsdManager::class.java).unregisterService(it) } }
+        announcement = null
         runCatching { server?.stop(true) }
         server = null
         wifiLock?.takeIf { it.isHeld }?.release()
