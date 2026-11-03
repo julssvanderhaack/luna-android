@@ -14,8 +14,8 @@ android {
         // 30: "all files access", the only way to reach USB drives by path
         minSdk = 30
         targetSdk = 37
-        versionCode = 6
-        versionName = "0.4.2"
+        versionCode = 7
+        versionName = "0.5.0"
     }
 
     // The release key lives outside the repo (~/.android/luna-release.properties):
@@ -69,6 +69,12 @@ dependencies {
     implementation(libs.sshd.core)
     implementation(libs.sshd.sftp)
     implementation(libs.eddsa)
+    implementation(libs.bcpg)
+    implementation(libs.bcprov)
+    implementation(libs.smbj)
+    implementation(libs.commons.net)
+    implementation(libs.commons.compress)
+    implementation(libs.xz)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
     testImplementation(libs.org.json)

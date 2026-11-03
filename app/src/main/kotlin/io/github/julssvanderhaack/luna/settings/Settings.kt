@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.settings
 
+import io.github.julssvanderhaack.luna.tr
 import android.content.Context
 import android.os.Environment
 import androidx.datastore.preferences.core.MutablePreferences
@@ -29,6 +30,15 @@ data class ServerConfig(
     val readOnly: Boolean = false,
 )
 
+/** How ordinary folders are shown (photo and video shortcuts keep their own grid/list). */
+enum class ViewMode(val label: String) {
+    LIST(tr("Lista")),
+    COMPACT(tr("Compacta")),
+    DETAILS(tr("Detallada")),
+    GRID(tr("Cuadrícula")),
+    TREE(tr("Árbol")),
+}
+
 data class AppSettings(
     val theme: String = DEFAULT_THEME,
     val dynamicColor: Boolean = false,
@@ -36,7 +46,11 @@ data class AppSettings(
     val sort: SortOrder = SortOrder(),
     /** Grid or list, remembered apart for photo/video shortcuts and for ordinary folders. */
     val gridMedia: Boolean = true,
-    val gridFiles: Boolean = false,
+    val viewFiles: ViewMode = ViewMode.LIST,
+    /** Text, Markdown, archives and Office files open in Luna's own preview on tap. */
+    val openInLuna: Boolean = true,
+    /** Delete moves to the trash; off = deleted for good straight away. */
+    val useTrash: Boolean = true,
     /** Folder paths ("sftp:<id>:<path>" for remote ones), in the order they were added. */
     val favorites: List<String> = emptyList(),
     val server: ServerConfig = ServerConfig(),
@@ -56,6 +70,9 @@ class Settings(private val context: Context) {
         val foldersFirst = booleanPreferencesKey("folders_first")
         val gridMedia = booleanPreferencesKey("grid_media")
         val gridFiles = booleanPreferencesKey("grid_files")
+        val viewFiles = stringPreferencesKey("view_files")
+        val openInLuna = booleanPreferencesKey("open_in_luna")
+        val useTrash = booleanPreferencesKey("use_trash")
         val favorites = stringPreferencesKey("favorites")
         val port = intPreferencesKey("server_port")
         val user = stringPreferencesKey("server_user")
@@ -77,7 +94,11 @@ class Settings(private val context: Context) {
                 foldersFirst = p[K.foldersFirst] ?: true,
             ),
             gridMedia = p[K.gridMedia] ?: true,
-            gridFiles = p[K.gridFiles] ?: false,
+            // 0.4 only had a grid/list switch
+            viewFiles = p[K.viewFiles]?.let { runCatching { ViewMode.valueOf(it) }.getOrNull() }
+                ?: if (p[K.gridFiles] == true) ViewMode.GRID else ViewMode.LIST,
+            openInLuna = p[K.openInLuna] ?: true,
+            useTrash = p[K.useTrash] ?: true,
             favorites = p[K.favorites]?.lines()?.filter { it.isNotBlank() } ?: emptyList(),
             server = ServerConfig(
                 port = p[K.port] ?: d.port,
@@ -102,7 +123,10 @@ class Settings(private val context: Context) {
         it[K.sortDesc] = s.descending
         it[K.foldersFirst] = s.foldersFirst
     }
-    suspend fun setGrid(media: Boolean, on: Boolean) = set { it[if (media) K.gridMedia else K.gridFiles] = on }
+    suspend fun setGridMedia(on: Boolean) = set { it[K.gridMedia] = on }
+    suspend fun setView(v: ViewMode) = set { it[K.viewFiles] = v.name }
+    suspend fun setOpenInLuna(on: Boolean) = set { it[K.openInLuna] = on }
+    suspend fun setUseTrash(on: Boolean) = set { it[K.useTrash] = on }
     suspend fun setFavorites(list: List<String>) = set { it[K.favorites] = list.joinToString("\n") }
 
     suspend fun setServer(c: ServerConfig) = set {

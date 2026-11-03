@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.fs
 
+import io.github.julssvanderhaack.luna.tr
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.media.ExifInterface
@@ -18,7 +19,8 @@ data class InfoSection(val title: String, val rows: List<Pair<String, String>>, 
 
 /** What a photo, video or song says about itself: resolution, compression, codecs, EXIF, tags. */
 object MediaInfo {
-    private val ES = Locale.forLanguageTag("es-ES")
+    private val ES get() = io.github.julssvanderhaack.luna.I18n.locale
+    private val longDate get() = if (ES.language == "es") "d 'de' MMMM 'de' yyyy" else "MMMM d, yyyy"
 
     /** Blocking; empty when the file isn't media or can't be read. */
     fun read(f: File): List<InfoSection> = runCatching {
@@ -51,20 +53,20 @@ object MediaInfo {
         if (w > 0 && h > 0) {
             val rotated = exif?.rotation() in setOf(90, 270)
             val (sw, sh) = if (rotated) h to w else w to h
-            rows += "Resolución" to "$sw × $sh píxeles"
-            rows += "Megapíxeles" to "${num(w.toLong() * h / 1e6, 1)} MP"
-            if (exif != null && exif.rotation() != 0) rows += "Rotación" to "${exif.rotation()}° (guardada en EXIF)"
+            rows += tr("Resolución") to tr("%1 × %2 píxeles", sw, sh)
+            rows += tr("Megapíxeles") to "${num(w.toLong() * h / 1e6, 1)} MP"
+            if (exif != null && exif.rotation() != 0) rows += tr("Rotación") to tr("%1° (guardada en EXIF)", exif.rotation())
         }
         val head = header(f)
-        rows += "Formato" to formatName(f, mime, head)
+        rows += tr("Formato") to formatName(f, mime, head)
         compression(f, head)?.let { rows.addAll(it) }
         if (w > 0 && h > 0 && f.length() > 0) {
             val bpp = f.length() * 8.0 / (w.toLong() * h)
             val ratio = w.toLong() * h * 3.0 / f.length()
-            rows += "Densidad" to "${num(bpp, 2)} bits por píxel" + (if (ratio >= 1.5) " · ${num(ratio, if (ratio < 10) 1 else 0)}:1 frente a sin comprimir" else "")
+            rows += tr("Densidad") to tr("%1 bits por píxel", num(bpp, 2)) + (if (ratio >= 1.5) tr(" · %1:1 frente a sin comprimir", num(ratio, if (ratio < 10) 1 else 0)) else "")
         }
-        o.outColorSpace?.name?.let { rows += "Espacio de color" to it }
-        val out = arrayListOf(InfoSection("Imagen", rows))
+        o.outColorSpace?.name?.let { rows += tr("Espacio de color") to it }
+        val out = arrayListOf(InfoSection(tr("Imagen"), rows))
         if (exif != null) out += exifSections(exif)
         return out
     }
@@ -84,7 +86,7 @@ object MediaInfo {
         h.at(0, "GIF8") -> "GIF"
         h.at(0, "BM") -> "BMP"
         h.at(4, "ftyp") && (h.at(8, "avif") || h.at(8, "avis")) -> "AVIF"
-        h.at(4, "ftyp") -> "HEIF / HEIC"
+        h.at(4, "ftyp") -> tr("HEIF / HEIC")
         else -> mime?.substringAfter('/')?.uppercase() ?: f.name.substringAfterLast('.').uppercase()
     }
 
@@ -94,10 +96,10 @@ object MediaInfo {
             "JPEG" -> jpeg(f)
             "PNG" -> png(f)
             "WebP" -> webp(f)
-            "GIF" -> listOf("Compresión" to "LZW, sin pérdida (hasta 256 colores)")
-            "BMP" -> listOf("Compresión" to "Normalmente sin comprimir")
-            "HEIF / HEIC" -> listOf("Compresión" to "HEVC (H.265), con pérdida")
-            "AVIF" -> listOf("Compresión" to "AV1, con pérdida")
+            "GIF" -> listOf(tr("Compresión") to tr("LZW, sin pérdida (hasta 256 colores)"))
+            "BMP" -> listOf(tr("Compresión") to tr("Normalmente sin comprimir"))
+            "HEIF / HEIC" -> listOf(tr("Compresión") to tr("HEVC (H.265), con pérdida"))
+            "AVIF" -> listOf(tr("Compresión") to tr("AV1, con pérdida"))
             else -> null
         }
     }.getOrNull()
@@ -133,26 +135,26 @@ object MediaInfo {
                         r.skipBytes(4)
                         val comps = r.read()
                         val factors = List(comps) { r.read(); val s = r.read(); r.read(); (s shr 4) to (s and 15) }
-                        out += "Codificación" to when (marker) {
-                            0xC0 -> "Secuencial (baseline)"
-                            0xC1 -> "Secuencial extendida"
-                            0xC2 -> "Progresiva"
-                            0xC3 -> "Sin pérdida"
-                            else -> "Aritmética"
+                        out += tr("Codificación") to when (marker) {
+                            0xC0 -> tr("Secuencial (baseline)")
+                            0xC1 -> tr("Secuencial extendida")
+                            0xC2 -> tr("Progresiva")
+                            0xC3 -> tr("Sin pérdida")
+                            else -> tr("Aritmética")
                         }
-                        out += "Color" to when (comps) {
-                            1 -> "Escala de grises"
-                            3 -> "Color (YCbCr)"
+                        out += tr("Color") to when (comps) {
+                            1 -> tr("Escala de grises")
+                            3 -> tr("Color (YCbCr)")
                             4 -> "CMYK"
                             else -> "$comps componentes"
                         }
-                        if (comps >= 3) out += "Submuestreo" to subsampling(factors)
-                        out += "Profundidad" to "$bits bits por canal"
+                        if (comps >= 3) out += tr("Submuestreo") to subsampling(factors)
+                        out += tr("Profundidad") to tr("%1 bits por canal", bits)
                     }
                 }
                 r.seek(start + len - 2)
             }
-            out.add(0, "Compresión" to (quality?.let { "JPEG con pérdida · calidad ≈ $it %" } ?: "JPEG con pérdida"))
+            out.add(0, tr("Compresión") to (quality?.let { tr("JPEG con pérdida · calidad ≈ %1 %", it) } ?: tr("JPEG con pérdida")))
         }
         return out
     }
@@ -188,18 +190,18 @@ object MediaInfo {
                 r.seek(r.filePointer + len + 4)
             }
             return listOfNotNull(
-                "Compresión" to "Deflate, sin pérdida",
-                "Color" to when (type) {
-                    0 -> "Escala de grises"
+                tr("Compresión") to tr("Deflate, sin pérdida"),
+                tr("Color") to when (type) {
+                    0 -> tr("Escala de grises")
                     2 -> "RGB"
-                    3 -> "Paleta indexada"
-                    4 -> "Escala de grises con transparencia"
-                    6 -> "RGB con transparencia"
-                    else -> "Tipo $type"
+                    3 -> tr("Paleta indexada")
+                    4 -> tr("Escala de grises con transparencia")
+                    6 -> tr("RGB con transparencia")
+                    else -> tr("Tipo %1", type)
                 },
-                "Profundidad" to "$depth bits por canal",
-                if (interlace == 1) "Entrelazado" to "Adam7" else null,
-                if (animated) "Animación" to "Sí (APNG)" else null,
+                tr("Profundidad") to tr("%1 bits por canal", depth),
+                if (interlace == 1) tr("Entrelazado") to "Adam7" else null,
+                if (animated) tr("Animación") to tr("Sí (APNG)") else null,
             )
         }
     }
@@ -234,13 +236,13 @@ object MediaInfo {
             }
         }
         return listOfNotNull(
-            "Compresión" to when {
-                lossy && lossless -> "VP8 y VP8L (mixta)"
-                lossless -> "VP8L, sin pérdida"
-                else -> "VP8, con pérdida"
+            tr("Compresión") to when {
+                lossy && lossless -> tr("VP8 y VP8L (mixta)")
+                lossless -> tr("VP8L, sin pérdida")
+                else -> tr("VP8, con pérdida")
             },
-            if (alpha) "Transparencia" to "Sí" else null,
-            if (animated) "Animación" to "Sí" else null,
+            if (alpha) tr("Transparencia") to tr("Sí") else null,
+            if (animated) tr("Animación") to tr("Sí") else null,
         )
     }
 
@@ -257,46 +259,46 @@ object MediaInfo {
             make == null || model.startsWith(make, ignoreCase = true) -> model
             else -> "${make.replaceFirstChar { it.uppercase() }} $model"
         }
-        camera?.let { cam += "Cámara" to it }
+        camera?.let { cam += tr("Cámara") to it }
         listOfNotNull(s("LensMake"), s("LensModel")).distinct().joinToString(" ").takeIf { it.isNotEmpty() }
-            ?.let { cam += "Objetivo" to it }
+            ?.let { cam += tr("Objetivo") to it }
         exifDate(s(ExifInterface.TAG_DATETIME_ORIGINAL) ?: s(ExifInterface.TAG_DATETIME), s(ExifInterface.TAG_OFFSET_TIME_ORIGINAL))
-            ?.let { cam += "Fecha de captura" to it }
+            ?.let { cam += tr("Fecha de captura") to it }
         d(ExifInterface.TAG_EXPOSURE_TIME)?.let { t ->
-            cam += "Exposición" to if (t < 1) "1/${(1 / t).roundToInt()} s" else "${num(t, if (t < 10) 1 else 0)} s"
+            cam += tr("Exposición") to if (t < 1) "1/${(1 / t).roundToInt()} s" else "${num(t, if (t < 10) 1 else 0)} s"
         }
-        d(ExifInterface.TAG_F_NUMBER)?.let { cam += "Apertura" to "f/${num(it, 1)}" }
+        d(ExifInterface.TAG_F_NUMBER)?.let { cam += tr("Apertura") to "f/${num(it, 1)}" }
         (i("PhotographicSensitivity") ?:i(ExifInterface.TAG_ISO_SPEED_RATINGS))?.takeIf { it > 0 }?.let { cam += "ISO" to "$it" }
         d(ExifInterface.TAG_FOCAL_LENGTH)?.let { fl ->
             val eq = i(ExifInterface.TAG_FOCAL_LENGTH_IN_35MM_FILM)?.takeIf { it > 0 }
-            cam += "Distancia focal" to "${num(fl, if (fl < 10) 1 else 0)} mm" + (eq?.let { " ($it mm equiv. 35 mm)" } ?: "")
+            cam += tr("Distancia focal") to "${num(fl, if (fl < 10) 1 else 0)} mm" + (eq?.let { tr(" (%1 mm equiv. 35 mm)", it) } ?: "")
         }
         x.getAttributeDouble(ExifInterface.TAG_EXPOSURE_BIAS_VALUE, Double.NaN).takeIf { !it.isNaN() && it != 0.0 }
-            ?.let { cam += "Compensación" to "${if (it > 0) "+" else ""}${num(it, 1)} EV" }
+            ?.let { cam += tr("Compensación") to "${if (it > 0) "+" else ""}${num(it, 1)} EV" }
         i(ExifInterface.TAG_EXPOSURE_PROGRAM)?.let { p ->
-            listOf(null, "Manual", "Automático", "Prioridad a la apertura", "Prioridad a la velocidad", "Creativo", "Acción", "Retrato", "Paisaje")
-                .getOrNull(p)?.let { cam += "Modo" to it }
+            listOf(null, tr("Manual"), tr("Automático"), tr("Prioridad a la apertura"), tr("Prioridad a la velocidad"), tr("Creativo"), tr("Acción"), tr("Retrato"), tr("Paisaje"))
+                .getOrNull(p)?.let { cam += tr("Modo") to it }
         }
-        i(ExifInterface.TAG_FLASH)?.let { cam += "Flash" to if (it and 1 == 1) "Disparado" else "No disparado" }
-        i(ExifInterface.TAG_WHITE_BALANCE)?.let { cam += "Balance de blancos" to if (it == 0) "Automático" else "Manual" }
-        d(ExifInterface.TAG_DIGITAL_ZOOM_RATIO)?.takeIf { it > 1 }?.let { cam += "Zoom digital" to "${num(it, 1)}×" }
+        i(ExifInterface.TAG_FLASH)?.let { cam += tr("Flash") to if (it and 1 == 1) tr("Disparado") else tr("No disparado") }
+        i(ExifInterface.TAG_WHITE_BALANCE)?.let { cam += tr("Balance de blancos") to if (it == 0) tr("Automático") else tr("Manual") }
+        d(ExifInterface.TAG_DIGITAL_ZOOM_RATIO)?.takeIf { it > 1 }?.let { cam += tr("Zoom digital") to "${num(it, 1)}×" }
 
         val more = ArrayList<Pair<String, String>>()
         d(ExifInterface.TAG_X_RESOLUTION)?.let { res ->
-            val unit = if (i(ExifInterface.TAG_RESOLUTION_UNIT) == 3) "píxeles por cm" else "ppp"
-            more += "Resolución de impresión" to "${res.roundToInt()} $unit"
+            val unit = if (i(ExifInterface.TAG_RESOLUTION_UNIT) == 3) tr("píxeles por cm") else "ppp"
+            more += tr("Resolución de impresión") to "${res.roundToInt()} $unit"
         }
-        s(ExifInterface.TAG_SOFTWARE)?.let { more += "Software" to it }
-        s(ExifInterface.TAG_ARTIST)?.let { more += "Autor" to it }
-        s(ExifInterface.TAG_COPYRIGHT)?.let { more += "Copyright" to it }
-        (s(ExifInterface.TAG_IMAGE_DESCRIPTION) ?: s(ExifInterface.TAG_USER_COMMENT))?.let { more += "Descripción" to it }
-        if (x.hasThumbnail()) more += "Miniatura incrustada" to "Sí"
+        s(ExifInterface.TAG_SOFTWARE)?.let { more += tr("Software") to it }
+        s(ExifInterface.TAG_ARTIST)?.let { more += tr("Autor") to it }
+        s(ExifInterface.TAG_COPYRIGHT)?.let { more += tr("Copyright") to it }
+        (s(ExifInterface.TAG_IMAGE_DESCRIPTION) ?: s(ExifInterface.TAG_USER_COMMENT))?.let { more += tr("Descripción") to it }
+        if (x.hasThumbnail()) more += tr("Miniatura incrustada") to tr("Sí")
 
-        val out = arrayListOf(InfoSection("Cámara", cam), InfoSection("Más datos EXIF", more))
+        val out = arrayListOf(InfoSection(tr("Cámara"), cam), InfoSection(tr("Más datos EXIF"), more))
         x.latLon()?.let { (lat, lon) ->
-            val rows = arrayListOf("Coordenadas" to "${num(lat, 5)}, ${num(lon, 5)}")
-            x.getAltitude(Double.NaN).takeIf { !it.isNaN() }?.let { rows += "Altitud" to "${it.roundToInt()} m" }
-            out += InfoSection("Ubicación", rows, geo = lat to lon)
+            val rows = arrayListOf(tr("Coordenadas") to "${num(lat, 5)}, ${num(lon, 5)}")
+            x.getAltitude(Double.NaN).takeIf { !it.isNaN() }?.let { rows += tr("Altitud") to "${it.roundToInt()} m" }
+            out += InfoSection(tr("Ubicación"), rows, geo = lat to lon)
         }
         return out
     }
@@ -318,7 +320,7 @@ object MediaInfo {
         v ?: return null
         val p = SimpleDateFormat("yyyy:MM:dd HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
         val t = runCatching { p.parse(v) }.getOrNull() ?: return v
-        val out = SimpleDateFormat("d 'de' MMMM 'de' yyyy, HH:mm:ss", ES).apply { timeZone = TimeZone.getTimeZone("UTC") }
+        val out = SimpleDateFormat("$longDate, HH:mm:ss", ES).apply { timeZone = TimeZone.getTimeZone("UTC") }
         return out.format(t) + (offset?.let { " (UTC$it)" } ?: "")
     }
 
@@ -331,34 +333,34 @@ object MediaInfo {
             fun k(key: Int) = r.extractMetadata(key)?.trim()?.takeIf { it.isNotEmpty() }
             val durMs = k(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
             val general = ArrayList<Pair<String, String>>()
-            durMs?.let { general += "Duración" to duration(it) }
-            general += "Contenedor" to container(k(MediaMetadataRetriever.METADATA_KEY_MIMETYPE), f)
+            durMs?.let { general += tr("Duración") to duration(it) }
+            general += tr("Contenedor") to container(k(MediaMetadataRetriever.METADATA_KEY_MIMETYPE), f)
             val bitrate = k(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toLongOrNull()
                 ?: durMs?.takeIf { it > 0 }?.let { f.length() * 8000 / it }
-            bitrate?.let { general += "Bitrate total" to bitrate(it) }
-            mp4Date(k(MediaMetadataRetriever.METADATA_KEY_DATE))?.let { general += "Fecha" to it }
+            bitrate?.let { general += tr("Bitrate total") to bitrate(it) }
+            mp4Date(k(MediaMetadataRetriever.METADATA_KEY_DATE))?.let { general += tr("Fecha") to it }
 
             val tracks = tracks(f, k(MediaMetadataRetriever.METADATA_KEY_MIMETYPE))
             val tags = ArrayList<Pair<String, String>>()
             listOf(
-                MediaMetadataRetriever.METADATA_KEY_TITLE to "Título",
-                MediaMetadataRetriever.METADATA_KEY_ARTIST to "Artista",
-                MediaMetadataRetriever.METADATA_KEY_ALBUM to "Álbum",
-                MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST to "Artista del álbum",
-                MediaMetadataRetriever.METADATA_KEY_COMPOSER to "Compositor",
-                MediaMetadataRetriever.METADATA_KEY_WRITER to "Letra",
-                MediaMetadataRetriever.METADATA_KEY_GENRE to "Género",
-                MediaMetadataRetriever.METADATA_KEY_YEAR to "Año",
-                MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER to "Pista",
-                MediaMetadataRetriever.METADATA_KEY_DISC_NUMBER to "Disco",
+                MediaMetadataRetriever.METADATA_KEY_TITLE to tr("Título"),
+                MediaMetadataRetriever.METADATA_KEY_ARTIST to tr("Artista"),
+                MediaMetadataRetriever.METADATA_KEY_ALBUM to tr("Álbum"),
+                MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST to tr("Artista del álbum"),
+                MediaMetadataRetriever.METADATA_KEY_COMPOSER to tr("Compositor"),
+                MediaMetadataRetriever.METADATA_KEY_WRITER to tr("Letra"),
+                MediaMetadataRetriever.METADATA_KEY_GENRE to tr("Género"),
+                MediaMetadataRetriever.METADATA_KEY_YEAR to tr("Año"),
+                MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER to tr("Pista"),
+                MediaMetadataRetriever.METADATA_KEY_DISC_NUMBER to tr("Disco"),
             ).forEach { (key, label) -> k(key)?.let { tags += label to it } }
-            if (r.embeddedPicture != null) tags += "Carátula" to "Incluida"
+            if (r.embeddedPicture != null) tags += tr("Carátula") to tr("Incluida")
 
-            val out = arrayListOf(InfoSection(if (Kind.of(f.name) == Kind.VIDEO) "Vídeo" else "Audio", general))
+            val out = arrayListOf(InfoSection(if (Kind.of(f.name) == Kind.VIDEO) tr("Vídeo") else tr("Audio"), general))
             out += tracks
-            out += InfoSection("Etiquetas", tags)
+            out += InfoSection(tr("Etiquetas"), tags)
             k(MediaMetadataRetriever.METADATA_KEY_LOCATION)?.let { iso6709(it) }?.let { (lat, lon) ->
-                out += InfoSection("Ubicación", listOf("Coordenadas" to "${num(lat, 5)}, ${num(lon, 5)}"), geo = lat to lon)
+                out += InfoSection(tr("Ubicación"), listOf(tr("Coordenadas") to "${num(lat, 5)}, ${num(lon, 5)}"), geo = lat to lon)
             }
             return out
         } finally {
@@ -378,38 +380,38 @@ object MediaInfo {
                 val nth = kinds.count { it == kind }.takeIf { it > 1 }?.let { " ${kinds.take(i + 1).count { k -> k == kind }}" } ?: ""
                 // Android's FLAC extractor hands out decoded PCM: the container says what it really is
                 val flac = mime == "audio/raw" && (containerMime?.contains("flac") == true || f.name.endsWith(".flac", true))
-                val rows = arrayListOf("Códec" to codec(if (flac) "audio/flac" else mime))
+                val rows = arrayListOf(tr("Códec") to codec(if (flac) "audio/flac" else mime))
                 fun int(key: String) = if (fmt.containsKey(key)) runCatching { fmt.getInteger(key) }.getOrNull() else null
                 when (kind) {
                     "video" -> {
                         val w = int(MediaFormat.KEY_WIDTH)
                         val h = int(MediaFormat.KEY_HEIGHT)
-                        if (w != null && h != null) rows += "Resolución" to "$w × $h${quality(w, h)}"
-                        frameRate(fmt)?.let { rows += "Fotogramas" to "${num(it, if (it % 1.0 == 0.0) 0 else 2)} por segundo" }
+                        if (w != null && h != null) rows += tr("Resolución") to "$w × $h${quality(w, h)}"
+                        frameRate(fmt)?.let { rows += tr("Fotogramas") to tr("%1 por segundo", num(it, if (it % 1.0 == 0.0) 0 else 2)) }
                         when (int(MediaFormat.KEY_COLOR_TRANSFER)) {
-                            MediaFormat.COLOR_TRANSFER_ST2084 -> rows += "Rango dinámico" to "HDR10 (PQ)"
-                            MediaFormat.COLOR_TRANSFER_HLG -> rows += "Rango dinámico" to "HDR (HLG)"
+                            MediaFormat.COLOR_TRANSFER_ST2084 -> rows += tr("Rango dinámico") to tr("HDR10 (PQ)")
+                            MediaFormat.COLOR_TRANSFER_HLG -> rows += tr("Rango dinámico") to tr("HDR (HLG)")
                         }
-                        int(MediaFormat.KEY_ROTATION)?.takeIf { it != 0 }?.let { rows += "Rotación" to "$it°" }
+                        int(MediaFormat.KEY_ROTATION)?.takeIf { it != 0 }?.let { rows += tr("Rotación") to "$it°" }
                     }
                     "audio" -> {
-                        int(MediaFormat.KEY_SAMPLE_RATE)?.let { rows += "Frecuencia" to "${num(it / 1000.0, if (it % 1000 == 0) 0 else 1)} kHz" }
-                        int(MediaFormat.KEY_CHANNEL_COUNT)?.let { rows += "Canales" to channels(it) }
-                        int("bits-per-sample")?.let { rows += "Profundidad" to "$it bits" }
+                        int(MediaFormat.KEY_SAMPLE_RATE)?.let { rows += tr("Frecuencia") to "${num(it / 1000.0, if (it % 1000 == 0) 0 else 1)} kHz" }
+                        int(MediaFormat.KEY_CHANNEL_COUNT)?.let { rows += tr("Canales") to channels(it) }
+                        int("bits-per-sample")?.let { rows += tr("Profundidad") to "$it bits" }
                         int(MediaFormat.KEY_PCM_ENCODING)?.let { enc ->
-                            mapOf(2 to 16, 3 to 8, 4 to 32, 21 to 24, 22 to 32)[enc]?.let { rows += "Profundidad" to "$it bits" }
+                            mapOf(2 to 16, 3 to 8, 4 to 32, 21 to 24, 22 to 32)[enc]?.let { rows += tr("Profundidad") to "$it bits" }
                         }
                     }
                 }
-                int(MediaFormat.KEY_BIT_RATE)?.takeIf { it > 0 }?.let { rows += "Bitrate" to bitrate(it.toLong()) }
+                int(MediaFormat.KEY_BIT_RATE)?.takeIf { it > 0 }?.let { rows += tr("Bitrate") to bitrate(it.toLong()) }
                 fmt.getString(MediaFormat.KEY_LANGUAGE)?.takeIf { it != "und" && it.isNotBlank() }?.let { lang ->
-                    rows += "Idioma" to (Locale.forLanguageTag(lang).getDisplayLanguage(ES).takeIf { it.isNotBlank() && it != lang } ?: lang)
+                    rows += tr("Idioma") to (Locale.forLanguageTag(lang).getDisplayLanguage(ES).takeIf { it.isNotBlank() && it != lang } ?: lang)
                 }
                 val title = when (kind) {
-                    "video" -> "Pista de vídeo"
-                    "audio" -> "Pista de audio"
-                    "text", "application" -> "Subtítulos"
-                    else -> "Pista"
+                    "video" -> tr("Pista de vídeo")
+                    "audio" -> tr("Pista de audio")
+                    "text", "application" -> tr("Subtítulos")
+                    else -> tr("Pista")
                 } + nth
                 InfoSection(title, rows.distinctBy { it.first })
             }
@@ -439,8 +441,8 @@ object MediaInfo {
     }
 
     private fun channels(n: Int) = when (n) {
-        1 -> "Mono"
-        2 -> "Estéreo"
+        1 -> tr("Mono")
+        2 -> tr("Estéreo")
         6 -> "5.1 (6 canales)"
         8 -> "7.1 (8 canales)"
         else -> "$n canales"
@@ -460,9 +462,9 @@ object MediaInfo {
         "audio/mpeg" -> "MP3"
         "audio/opus" -> "Opus"
         "audio/vorbis" -> "Vorbis"
-        "audio/flac" -> "FLAC (sin pérdida)"
-        "audio/alac" -> "ALAC (sin pérdida)"
-        "audio/raw" -> "PCM (sin comprimir)"
+        "audio/flac" -> tr("FLAC (sin pérdida)")
+        "audio/alac" -> tr("ALAC (sin pérdida)")
+        "audio/raw" -> tr("PCM (sin comprimir)")
         "audio/3gpp" -> "AMR-NB"
         "audio/amr-wb" -> "AMR-WB"
         "audio/ac3" -> "Dolby Digital (AC-3)"
@@ -511,7 +513,7 @@ object MediaInfo {
             runCatching { SimpleDateFormat(pat, Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }.parse(v) }.getOrNull()
         } ?: return null
         if (t.time < 31_536_000_000L) return null
-        return SimpleDateFormat("d 'de' MMMM 'de' yyyy, HH:mm", ES).format(t)
+        return SimpleDateFormat("$longDate, HH:mm", ES).format(t)
     }
 
     /** "+40.4168-003.7038/" → (40.4168, -3.7038). */

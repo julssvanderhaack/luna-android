@@ -11,6 +11,11 @@ eddsa = "0.3.0"
 profileinstaller = "1.4.1"
 junit = "4.13.2"
 orgJson = "20260814"
+bouncycastle = "1.86"
+smbj = "0.15.0"
+commonsNet = "3.13.0"
+commonsCompress = "1.28.0"
+xz = "1.12"
 
 [libraries]
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "core" }
@@ -31,6 +36,13 @@ sshd-sftp = { module = "org.apache.sshd:sshd-sftp", version.ref = "sshd" }
 # compiles the bundled baseline profiles on sideloaded installs too (Play does it on its own)
 androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
 eddsa = { module = "net.i2p.crypto:eddsa", version.ref = "eddsa" }
+# OpenPGP files that desktop Luna and gpg open (bcprov also gives smbj the MD4/DES Android lacks)
+bcpg = { module = "org.bouncycastle:bcpg-jdk18on", version.ref = "bouncycastle" }
+bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
+commons-net = { module = "commons-net:commons-net", version.ref = "commonsNet" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
+xz = { module = "org.tukaani:xz", version.ref = "xz" }
 junit = { module = "junit:junit", version.ref = "junit" }
 # Android ships org.json; the JVM unit tests need the real one
 org-json = { module = "org.json:json", version.ref = "orgJson" }

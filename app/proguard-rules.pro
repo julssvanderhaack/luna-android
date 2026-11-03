@@ -9,3 +9,13 @@
 -dontwarn org.bouncycastle.**
 -dontwarn org.apache.tomcat.**
 -dontwarn sun.security.x509.**
+# smbj dispatches its events through MBassador by annotations and reflection
+-keep class com.hierynomus.** { *; }
+-keep class net.engio.mbassy.** { *; }
+-dontwarn com.hierynomus.**
+-dontwarn net.engio.mbassy.**
+-dontwarn org.apache.commons.compress.**
+-dontwarn org.tukaani.xz.**
+-dontwarn com.github.luben.zstd.**
+-dontwarn org.brotli.dec.**
+-dontwarn org.objectweb.asm.**

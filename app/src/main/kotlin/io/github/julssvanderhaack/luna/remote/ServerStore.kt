@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.remote
 
+import io.github.julssvanderhaack.luna.tr
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONArray
@@ -7,7 +8,14 @@ import org.json.JSONObject
 import java.io.File
 import java.util.UUID
 
-/** A saved SFTP server. The private key, if any, is a copy in files/keys/<id>. */
+enum class Protocol(val label: String, val scheme: String, val defaultPort: Int) {
+    SFTP(tr("SFTP (SSH)"), "sftp", 22),
+    SMB(tr("SMB (Windows, NAS)"), "smb", 445),
+    FTP("FTP", "ftp", 21),
+    FTPS(tr("FTPS (FTP con TLS)"), "ftps", 21),
+}
+
+/** A saved server. The private key of an SFTP one, if any, is a copy in files/keys/<id>. */
 data class Server(
     val id: String = UUID.randomUUID().toString(),
     val name: String = "",
@@ -20,9 +28,14 @@ data class Server(
     val keyPassphrase: String? = null,
     /** Empty = the user's home folder on the server. */
     val startPath: String = "",
+    val protocol: Protocol = Protocol.SFTP,
+    /** SMB only: the shared folder ("Público", "fotos"…); Windows can't list them to other clients without RPC. */
+    val share: String = "",
 ) {
-    val title get() = name.ifBlank { "$user@$host" }
-    val hostPort get() = if (port == 22) host else "$host:$port"
+    val title get() = name.ifBlank { if (user.isBlank()) host else "$user@$host" }
+    val hostPort get() = if (port == protocol.defaultPort) host else "$host:$port"
+    /** sftp://user@host:port/, as the PC would write it. */
+    val url get() = "${protocol.scheme}://${if (user.isBlank()) "" else "$user@"}$hostPort/${if (protocol == Protocol.SMB) share else ""}"
 
     fun toJson() = JSONObject().apply {
         put("id", id); put("name", name); put("host", host); put("port", port); put("user", user)
@@ -30,6 +43,8 @@ data class Server(
         put("hasKey", hasKey)
         keyPassphrase?.let { put("keyPassphrase", it) }
         put("startPath", startPath)
+        put("protocol", protocol.name)
+        put("share", share)
     }
 
     companion object {
@@ -43,6 +58,8 @@ data class Server(
             hasKey = o.optBoolean("hasKey"),
             keyPassphrase = if (o.has("keyPassphrase")) o.getString("keyPassphrase") else null,
             startPath = o.optString("startPath"),
+            protocol = runCatching { Protocol.valueOf(o.optString("protocol")) }.getOrDefault(Protocol.SFTP),
+            share = o.optString("share"),
         )
     }
 }

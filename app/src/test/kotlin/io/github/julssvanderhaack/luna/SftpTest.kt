@@ -66,10 +66,10 @@ class SftpTest {
 
         // phone → PC and PC → phone through FileOps, like Pegar
         val pc = tmp.newFolder("pc")
-        FileOps {}.transfer(vfs, vfs.list("/"), LocalVfs, pc.path, move = false)
+        FileOps({}).transfer(vfs, vfs.list("/"), LocalVfs, pc.path, move = false)
         assertEquals("píxeles", File(pc, "DCIM/foto.jpg").readText())
         File(pc, "nota.txt").writeText("del PC")
-        FileOps {}.transfer(LocalVfs, listOf(LocalVfs.stat(File(pc, "nota.txt").path)!!), vfs, "/DCIM", move = false)
+        FileOps({}).transfer(LocalVfs, listOf(LocalVfs.stat(File(pc, "nota.txt").path)!!), vfs, "/DCIM", move = false)
         assertEquals("del PC", File(root, "DCIM/nota.txt").readText())
         // rename and recursive delete on the server
         assertTrue(vfs.move("/DCIM/nota.txt", "/DCIM/nota2.txt"))

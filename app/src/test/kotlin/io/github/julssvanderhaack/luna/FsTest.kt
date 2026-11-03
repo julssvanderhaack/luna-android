@@ -1,5 +1,9 @@
 package io.github.julssvanderhaack.luna
 
+import io.github.julssvanderhaack.luna.fs.Answer
+import io.github.julssvanderhaack.luna.fs.ArchiveFormat
+import io.github.julssvanderhaack.luna.fs.Archives
+import io.github.julssvanderhaack.luna.fs.Choice
 import io.github.julssvanderhaack.luna.fs.FileEntry
 import io.github.julssvanderhaack.luna.fs.FileOps
 import io.github.julssvanderhaack.luna.fs.Kind
@@ -7,6 +11,7 @@ import io.github.julssvanderhaack.luna.fs.LocalVfs
 import io.github.julssvanderhaack.luna.fs.Paths
 import io.github.julssvanderhaack.luna.fs.SortBy
 import io.github.julssvanderhaack.luna.fs.SortOrder
+import io.github.julssvanderhaack.luna.fs.Trash
 import io.github.julssvanderhaack.luna.fs.fold
 import io.github.julssvanderhaack.luna.fs.naturalCompare
 import io.github.julssvanderhaack.luna.fs.sortEntries
@@ -115,7 +120,7 @@ class FsTest {
     fun copyMoveAndConflicts() = runBlocking {
         val src = tree()
         val dst = tmp.newFolder("dst")
-        val ops = FileOps {}
+        val ops = FileOps({})
         val entries = LocalVfs.list(src.path)
         ops.transfer(LocalVfs, entries, LocalVfs, dst.path, move = false)
         assertEquals("uno", File(dst, "Fotos/viaje/1.jpg").readText())
@@ -140,15 +145,78 @@ class FsTest {
     }
 
     @Test
-    fun zipRoundTrip() = runBlocking {
+    fun conflictsAsk() = runBlocking {
         val src = tree()
-        val ops = FileOps {}
-        val zip = File(src, "todo.zip").path
-        ops.zip(LocalVfs, LocalVfs.list(src.path), zip)
-        val out = ops.unzip(LocalVfs, LocalVfs.stat(zip)!!)
-        assertEquals(File(src, "todo").path, out)
-        assertEquals("uno", File(out, "Fotos/viaje/1.jpg").readText())
-        assertEquals("hola", File(out, "nota.txt").readText())
+        val dst = tmp.newFolder("dst")
+        File(dst, "nota.txt").writeText("vieja")
+        File(dst, "Fotos").mkdirs()
+        File(dst, "Fotos/2.jpg").writeText("otra")
+        File(dst, "Fotos/3.jpg").writeText("tres")
+        val asked = ArrayList<String>()
+        // folders merge, files: first replace, then skip for all
+        val ops = FileOps({}) { c ->
+            asked += c.incoming.name
+            when {
+                c.incoming.isDir -> Answer(Choice.REPLACE)
+                c.incoming.name == "nota.txt" -> Answer(Choice.REPLACE)
+                else -> Answer(Choice.SKIP, forAll = true)
+            }
+        }
+        val t = ops.transfer(LocalVfs, LocalVfs.list(src.path), LocalVfs, dst.path, move = false)
+        assertEquals(listOf("Fotos", "2.jpg", "nota.txt").sorted(), asked.sorted())
+        assertEquals("hola", File(dst, "nota.txt").readText())
+        assertEquals("otra", File(dst, "Fotos/2.jpg").readText())
+        assertEquals("uno", File(dst, "Fotos/viaje/1.jpg").readText())
+        assertTrue(File(dst, "Fotos/3.jpg").exists())
+        assertTrue(t.replaced)
+        // a merge reports what it created inside, never the folder that was already there
+        assertFalse(t.created.contains(File(dst, "Fotos").path))
+        assertTrue(t.created.contains(File(dst, "Fotos/viaje").path))
+    }
+
+    @Test
+    fun trashAndRestore() = runBlocking {
+        val vol = tmp.newFolder("vol")
+        File(vol, "Docs").mkdirs()
+        val f = File(vol, "Docs/carta ñ.txt").apply { writeText("x") }
+        val d = File(vol, "Docs/sub").apply { mkdirs(); File(this, "a").writeText("a") }
+        val items = FileOps({}).trash(listOf(LocalVfs.entry(f), LocalVfs.entry(d))) { vol.path }
+        assertFalse(f.exists() || d.exists())
+        val listed = Trash.list(vol.path)
+        assertEquals(setOf(f.path, d.path), listed.map { it.originalPath }.toSet())
+        assertTrue(File(vol, ".Trash-luna/.nomedia").exists())
+        // same name again doesn't clash in the trash
+        File(vol, "Docs/carta ñ.txt").writeText("y")
+        Trash.put(File(vol, "Docs/carta ñ.txt"), vol.path)
+        assertEquals(3, Trash.list(vol.path).size)
+        File(vol, "Docs/carta ñ.txt").delete()
+        items.forEach { Trash.restore(it) }
+        assertEquals("x", f.readText())
+        assertEquals("a", File(d, "a").readText())
+        Trash.list(vol.path).forEach { Trash.purge(it) }
+        assertTrue(Trash.list(vol.path).isEmpty())
+    }
+
+    @Test
+    fun archiveFormatsRoundTrip() = runBlocking {
+        for (format in ArchiveFormat.entries) {
+            val src = tree()
+            val ops = FileOps({})
+            val target = File(src, "todo${format.ext}").path
+            ops.compress(LocalVfs, LocalVfs.list(src.path), target, format)
+            val items = Archives.list(File(target))
+            assertTrue(format.name, items.any { it.path == "Fotos/viaje/1.jpg" && !it.isDir })
+            val out = ops.extract(LocalVfs, LocalVfs.stat(target)!!, File(target))
+            assertEquals(format.name, File(src, "todo").path, out)
+            assertEquals("uno", File(out, "Fotos/viaje/1.jpg").readText())
+            assertEquals("hola", File(out, "nota.txt").readText())
+            val one = File(tmp.root, "uno-${format.name}")
+            Archives.extractOne(File(target), "Fotos/2.jpg", one)
+            assertEquals("dos", one.readText())
+            src.deleteRecursively()
+        }
+        assertEquals("fotos", Archives.stem("fotos.tar.gz"))
+        assertEquals("fotos", Archives.stem("fotos.zip"))
     }
 
     @Test
@@ -159,7 +227,7 @@ class FsTest {
             z.putNextEntry(ZipEntry("../../fuera.txt")); z.write("x".toByteArray()); z.closeEntry()
             z.putNextEntry(ZipEntry("dentro.txt")); z.write("y".toByteArray()); z.closeEntry()
         }
-        val out = FileOps {}.unzip(LocalVfs, LocalVfs.stat(zip.path)!!)
+        val out = FileOps({}).extract(LocalVfs, LocalVfs.stat(zip.path)!!, zip)
         assertFalse(File(tmp.root, "fuera.txt").exists())
         assertEquals("y", File(out, "dentro.txt").readText())
     }

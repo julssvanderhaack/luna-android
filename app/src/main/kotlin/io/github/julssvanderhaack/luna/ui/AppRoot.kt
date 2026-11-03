@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.ui
 
+import io.github.julssvanderhaack.luna.tr
 import android.content.Intent
 import android.os.Environment
 import android.provider.Settings
@@ -26,7 +27,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,8 +62,20 @@ fun AppRoot(vm: MainViewModel) {
         granted = Environment.isExternalStorageManager()
         vm.reloadVolumes()
     }
+    // servers announced on the Wi-Fi, looked for only while Luna is on screen
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { vm.luna.discovery.start() }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.luna.discovery.stop() }
     val snack = remember { SnackbarHostState() }
-    LaunchedEffect(Unit) { vm.messages.collect { snack.showSnackbar(it) } }
+    LaunchedEffect(Unit) {
+        vm.messages.collect { m ->
+            // one at a time, but a new message shouldn't wait behind an old one's "Deshacer"
+            snack.currentSnackbarData?.dismiss()
+            launch {
+                val r = snack.showSnackbar(m.text, m.action, duration = if (m.action != null) SnackbarDuration.Long else SnackbarDuration.Short)
+                if (r == SnackbarResult.ActionPerformed) m.onAction?.invoke()
+            }
+        }
+    }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         if (!granted) {
@@ -70,12 +85,15 @@ fun AppRoot(vm: MainViewModel) {
         val route = vm.stack.last()
         // each screen in the back stack keeps its saveable state (scroll position…) while it's covered
         val saved = rememberSaveableStateHolder()
-        val keys = vm.stack.mapIndexed { i, r -> "$i:$r" }
+        val tabId = vm.tab.id
+        val keys = vm.stack.mapIndexed { i, r -> "$tabId:$i:$r" }
         val live = remember { mutableSetOf<String>() }
-        LaunchedEffect(keys) {
-            (live - keys.toSet()).forEach { saved.removeState(it) }
+        val allKeys = vm.tabs.flatMap { t -> t.stack.mapIndexed { i, r -> "${t.id}:$i:$r" } }
+        LaunchedEffect(allKeys) {
+            // screens in other tabs keep their state too; only closed ones are forgotten
+            (live - allKeys.toSet()).forEach { saved.removeState(it) }
             live.clear()
-            live += keys
+            live += allKeys
         }
         BackHandler(enabled = vm.stack.size > 1) { vm.back() }
         val progress by vm.progress.collectAsStateWithLifecycle()
@@ -95,17 +113,22 @@ fun AppRoot(vm: MainViewModel) {
                 Route.Home -> HomeScreen(vm)
                 is Route.Browse -> BrowserScreen(vm, route.loc)
                 Route.PhoneServer -> PhoneServerScreen(vm)
-                is Route.EditServer -> EditServerScreen(vm, route.id)
+                is Route.EditServer -> EditServerScreen(vm, route.id, route.found)
                 Route.Settings -> SettingsScreen(vm)
                 Route.Themes -> ThemesScreen(vm)
                 is Route.ThemeEditor -> ThemeEditorScreen(vm, route.base, route.editing)
                 is Route.Viewer -> ViewerScreen(vm, route)
+                is Route.Preview -> PreviewScreen(vm, route)
+                Route.Trash -> TrashScreen(vm)
+                Route.Keys -> KeysScreen(vm)
+                is Route.Usage -> UsageScreen(vm, route.loc)
             }
             }
             Column(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 72.dp)) {
                 progress?.let { ProgressCard(it, vm::cancelOp) }
                 SnackbarHost(snack)
             }
+            vm.conflict?.let { ConflictDialog(it, onCancel = vm::cancelOp) }
         }
         }
         }
@@ -130,7 +153,7 @@ private fun ProgressCard(p: Progress, onCancel: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                IconButton(onClick = onCancel) { Icon(Icons.Rounded.Close, "Cancelar") }
+                IconButton(onClick = onCancel) { Icon(Icons.Rounded.Close, tr("Cancelar")) }
             }
             val f = p.fraction
             if (f != null) LinearProgressIndicator(progress = { f }, modifier = Modifier.fillMaxWidth().padding(end = 12.dp))
@@ -149,13 +172,13 @@ private fun PermissionScreen() {
     ) {
         Icon(Icons.Rounded.FolderOpen, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(72.dp))
         Text(
-            "Luna necesita ver tus archivos", style = MaterialTheme.typography.headlineSmall,
+            tr("Luna necesita ver tus archivos"), style = MaterialTheme.typography.headlineSmall,
             textAlign = TextAlign.Center, modifier = Modifier.padding(top = 16.dp),
         )
         Text(
-            "Para explorar el almacenamiento, los pendrives y los discos USB, Android pide activar " +
-                "«Permitir acceso para gestionar todos los archivos». Luna no envía nada a ningún sitio " +
-                "salvo a los servidores que tú añadas.",
+            tr("Para explorar el almacenamiento, los pendrives y los discos USB, Android pide activar ") +
+                tr("«Permitir acceso para gestionar todos los archivos». Luna no envía nada a ningún sitio ") +
+                tr("salvo a los servidores que tú añadas."),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp, bottom = 24.dp),
@@ -164,6 +187,6 @@ private fun PermissionScreen() {
             val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, "package:${context.packageName}".toUri())
             runCatching { context.startActivity(intent) }
                 .onFailure { context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)) }
-        }) { Text("Abrir ajustes") }
+        }) { Text(tr("Abrir ajustes")) }
     }
 }

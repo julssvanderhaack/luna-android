@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.server
 
+import io.github.julssvanderhaack.luna.tr
 import io.github.julssvanderhaack.luna.settings.ServerConfig
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver
@@ -54,7 +55,7 @@ fun authorizedKeys(text: String): List<PublicKey> = text.lineSequence()
 
 /** Refuses anything that would change a file when the server is read-only. */
 private object ReadOnly : SftpEventListener {
-    private fun no(): Nothing = throw IOException("Servidor de solo lectura")
+    private fun no(): Nothing = throw IOException(tr("Servidor de solo lectura"))
     override fun opening(session: ServerSession, remoteHandle: String, localHandle: Handle) {
         if (localHandle is FileHandle) {
             val o = localHandle.openOptions

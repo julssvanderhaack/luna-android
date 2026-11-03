@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.ui
 
+import io.github.julssvanderhaack.luna.tr
 import android.os.Environment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Android
@@ -33,15 +34,15 @@ class Shortcut(
 val homeDir: String get() = Environment.getExternalStorageDirectory().path
 
 val SHORTCUTS = listOf(
-    Shortcut("Recientes", Icons.Rounded.History, { MaterialTheme.colorScheme.primary }, onHome = false) { Loc.Media(Category.RECENT) },
-    Shortcut("Cámara", Icons.Rounded.CameraAlt, { LocalPalette.current.magenta.compose() }) { Loc.Media(Category.CAMERA) },
-    Shortcut("Descargas", Icons.Rounded.Download, { LocalPalette.current.blue.compose() }) {
+    Shortcut(tr("Recientes"), Icons.Rounded.History, { MaterialTheme.colorScheme.primary }, onHome = false) { Loc.Media(Category.RECENT) },
+    Shortcut(tr("Cámara"), Icons.Rounded.CameraAlt, { LocalPalette.current.magenta.compose() }) { Loc.Media(Category.CAMERA) },
+    Shortcut(tr("Descargas"), Icons.Rounded.Download, { LocalPalette.current.blue.compose() }) {
         Loc.Local(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).path)
     },
-    Shortcut("Imágenes", Icons.Rounded.Image, { LocalPalette.current.cyan.compose() }) { Loc.Media(Category.IMAGES) },
-    Shortcut("Vídeos", Icons.Rounded.Movie, { LocalPalette.current.redKind.compose() }) { Loc.Media(Category.VIDEOS) },
-    Shortcut("Audio", Icons.Rounded.AudioFile, { LocalPalette.current.orange.compose() }) { Loc.Media(Category.AUDIO) },
-    Shortcut("Documentos", Icons.Rounded.Description, { LocalPalette.current.yellow.compose() }) { Loc.Media(Category.DOCUMENTS) },
+    Shortcut(tr("Imágenes"), Icons.Rounded.Image, { LocalPalette.current.cyan.compose() }) { Loc.Media(Category.IMAGES) },
+    Shortcut(tr("Vídeos"), Icons.Rounded.Movie, { LocalPalette.current.redKind.compose() }) { Loc.Media(Category.VIDEOS) },
+    Shortcut(tr("Audio"), Icons.Rounded.AudioFile, { LocalPalette.current.orange.compose() }) { Loc.Media(Category.AUDIO) },
+    Shortcut(tr("Documentos"), Icons.Rounded.Description, { LocalPalette.current.yellow.compose() }) { Loc.Media(Category.DOCUMENTS) },
     Shortcut("APK", Icons.Rounded.Android, { LocalPalette.current.green.compose() }) { Loc.Media(Category.APKS) },
-    Shortcut("Comprimidos", Icons.Rounded.FolderZip, { MaterialTheme.colorScheme.primary }) { Loc.Media(Category.ARCHIVES) },
+    Shortcut(tr("Comprimidos"), Icons.Rounded.FolderZip, { MaterialTheme.colorScheme.primary }) { Loc.Media(Category.ARCHIVES) },
 )

@@ -9,6 +9,50 @@ de «Mis archivos» de Samsung y un menú de pulsación larga con las opciones d
 |---|---|---|
 | ![](docs/capturas/inicio.png) | ![](docs/capturas/menu.png) | ![](docs/capturas/servidor.png) |
 
+## Novedades de la v0.5
+
+Lo que tenía Luna de escritorio y le faltaba al móvil:
+
+- **Papelera** en cada almacenamiento (`.Trash-luna` en el interno y en cada USB/SD, con el
+  formato freedesktop del PC): Eliminar mueve ahí y se puede deshacer; *Ajustes → Papelera*
+  o *Inicio → Papelera* para restaurar a su sitio o vaciar. «Eliminar definitivamente…»
+  sigue estando a mano. Se puede apagar en Ajustes.
+- **Deshacer y rehacer** (⋮ de la carpeta, o «Deshacer» en el aviso) de copiar, mover,
+  renombrar, enviar a la papelera, crear, comprimir y extraer.
+- **Conflictos al pegar**: si algo ya existe, Luna pregunta —Reemplazar (o *Combinar* para
+  carpetas), Mantener ambos o Saltar, con «lo mismo con los demás»— en vez de renombrar
+  siempre a «nombre (2)».
+- **Pestañas**: «Abrir en una pestaña nueva» en la pulsación larga, ⋮ → Nueva pestaña, y el
+  botón de pestañas para saltar entre ellas o cerrarlas. Cada pestaña recuerda su recorrido.
+- **Copiar a… / Mover a…** con selector de carpeta (almacenamientos, favoritos y servidores).
+- **Renombrar en lote**: reemplazar texto o numerar, con vista previa de cómo quedará
+  (los intercambios de nombre funcionan).
+- **Más vistas**: lista, compacta, detallada (tamaño, fecha y tipo), cuadrícula y **árbol**
+  desplegable, como en el escritorio.
+- **Búsqueda con filtros**: dentro de los archivos (texto), por fecha y por tamaño.
+- **Ir a una carpeta** (al estilo zoxide): escribe parte del nombre y salen las carpetas que
+  más visitas; también se puede editar la ruta tocando la última miga de pan.
+- **Vista previa en Luna** («Abrir en Luna» en Ajustes): textos y código, **Markdown**
+  renderizado, **PDF** página a página, **documentos de Office/LibreOffice** (texto y
+  portada), **comprimidos** (navegar dentro y abrir o extraer un archivo suelto) y **audio**
+  (30 s de la mitad con carátula). Se desliza entre los archivos de la carpeta.
+- **Comprimir y extraer** zip, tar.gz, tar.xz y 7z (antes solo zip).
+- **Cifrado OpenPGP** compatible con gpg y Kleopatra: cifrar con contraseña (AES-256) o para
+  claves públicas, descifrar `.gpg`/`.pgp`/`.asc` con contraseña o con tu clave secreta.
+  Las claves se importan en *Ajustes → Claves OpenPGP*. Las carpetas se cifran como `.tar.gpg`.
+- **Imágenes**: girar a izquierda/derecha, reducir tamaño y convertir a JPG/PNG/WebP
+  (copia, conservando el EXIF en JPEG).
+- **Permisos**: Propiedades enseña permisos, propietario y grupo, y «Cambiar permisos…»
+  (lectura/escritura/ejecución, setuid/setgid/sticky, octal, recursivo) donde Android deja.
+- **Qué ocupa espacio**: tamaño de cada carpeta y archivo, ordenado, con barras.
+- **SMB y FTP/FTPS** además de SFTP: carpetas compartidas de Windows y NAS (usuario,
+  `DOMINIO\usuario` o invitado) y FTP con TLS explícito.
+- **Servidores de la red**: Luna busca por mDNS servidores SFTP, SMB y FTP en tu Wi-Fi
+  (incluida Luna de escritorio o otro móvil con Luna) y los enseña en Inicio y en el menú
+  lateral para conectar con un toque.
+- **Inglés**: *Ajustes → Idioma* (Automático, Español, English). Por defecto, español si el
+  móvil está en español e inglés si no. Los textos que ya tenía Luna de escritorio se reutilizan.
+
 ## Qué hace (v0.4)
 
 - **Menú lateral** (☰): Inicio, Carpeta personal (`/storage/emulated/0`, la «home» del
@@ -89,7 +133,10 @@ con fotos de 12 MP:
 
 Android 11+ (minSdk 30: el permiso «acceso a todos los archivos» es lo que deja usar los
 USB por ruta). Kotlin + Compose, [Apache MINA SSHD](https://mina.apache.org/sshd-project/)
-para el cliente y el servidor SFTP.
+para el cliente y el servidor SFTP, [smbj](https://github.com/hierynomus/smbj) para SMB,
+[Commons Net](https://commons.apache.org/proper/commons-net/) para FTP/FTPS,
+[Commons Compress](https://commons.apache.org/proper/commons-compress/) + XZ para los
+comprimidos y [Bouncy Castle](https://www.bouncycastle.org/) para OpenPGP.
 
 ```sh
 JAVA_HOME=/opt/android-studio/jbr ./gradlew assembleDebug testDebugUnitTest
@@ -98,17 +145,23 @@ JAVA_HOME=/opt/android-studio/jbr ./gradlew assembleRelease   # firma con ~/.and
 
 Los tests de JVM levantan el servidor de Luna y conectan el cliente de Luna contra él
 (contraseña, clave pública, huella nueva y cambiada, solo lectura), además de copiar,
-mover, comprimir y extraer de verdad.
+mover, comprimir y extraer de verdad, la papelera, los conflictos y el cifrado (incluido
+abrir con `gpg` lo que cifra Luna y al revés, si `gpg` está instalado). `RemoteTest` prueba
+SMB y FTP(S) contra servidores reales si se le dan con `LUNA_SMB=host:puerto:recurso:usuario:clave`,
+`LUNA_FTP=host:puerto:usuario:clave` y `LUNA_FTPS=…`. `I18nTest` comprueba que cada texto
+tiene su traducción en `app/src/main/assets/i18n/en.tsv`.
 
 `tools/import-omarchy-themes.sh` vuelve a copiar los temas instalados.
 
 ## Pendiente
 
-- Papelera (MediaStore la tiene para fotos/vídeos/audio).
 - Discos NTFS que el móvil no monta (haría falta libaums o similar).
 - Copias largas en un servicio en primer plano (ahora siguen al salir de la pantalla, no si
   Android mata la app).
-- Más protocolos (SMB/WebDAV), textos en inglés.
+- WebDAV y NFS; RAR (formato cerrado).
+- Del escritorio no se han traído, por no tener sentido en el móvil: la terminal integrada,
+  el estado de git, la vista dividida en dos paneles, los atajos de teclado, crear enlaces
+  simbólicos (Android no deja en el almacenamiento compartido) y lo propio de Omarchy.
 
 ## Licencia
 

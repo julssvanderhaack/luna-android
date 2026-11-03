@@ -1,13 +1,10 @@
 package io.github.julssvanderhaack.luna.fs
 
+import io.github.julssvanderhaack.luna.tr
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import java.io.BufferedInputStream
-import java.io.BufferedOutputStream
+import java.io.File
 import java.io.IOException
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
-import java.util.zip.ZipOutputStream
 
 /** What a running operation reports to the progress card. */
 data class Progress(
@@ -24,14 +21,35 @@ data class Tally(val files: Int = 0, val folders: Int = 0, val bytes: Long = 0) 
     operator fun plus(o: Tally) = Tally(files + o.files, folders + o.folders, bytes + o.bytes)
 }
 
+/** A name that already exists where something is being pasted. */
+data class Conflict(val incoming: FileEntry, val existing: FileEntry)
+
+enum class Choice { REPLACE, KEEP_BOTH, SKIP }
+
+data class Answer(val choice: Choice, val forAll: Boolean = false)
+
 /**
- * Copy, move, delete and zip between any two [Vfs]: local↔local, local↔SFTP,
- * SFTP↔SFTP. Names that already exist get " (2)" like desktop Luna's paste.
- * Every loop checks for cancellation.
+ * What a paste did, item by item (source → the path it ended up at), so it
+ * can be undone. [replaced] = something was overwritten: that can't be undone.
  */
-class FileOps(private val report: (Progress) -> Unit) {
+data class Transfer(val pairs: List<Pair<String, String>>, val replaced: Boolean) {
+    val created get() = pairs.map { it.second }
+}
+
+/**
+ * Copy, move, delete and compress between any two [Vfs]: local↔local,
+ * local↔remote, remote↔remote. A name that's already taken asks [ask]
+ * (replace — merge for folders —, keep both as «nombre (2)», or skip), like
+ * desktop Luna's paste. Every loop checks for cancellation.
+ */
+class FileOps(
+    private val report: (Progress) -> Unit,
+    private val ask: suspend (Conflict) -> Answer = { Answer(Choice.KEEP_BOTH, true) },
+) {
     private val buf = ByteArray(256 * 1024)
     private var progress = Progress("")
+    private var allFiles: Choice? = null
+    private var allDirs: Choice? = null
 
     suspend fun tally(vfs: Vfs, entries: List<FileEntry>): Tally {
         var t = Tally()
@@ -42,30 +60,69 @@ class FileOps(private val report: (Progress) -> Unit) {
         return t
     }
 
-    /** Returns the paths created in [dstDir], so the caller can tell MediaStore. */
-    suspend fun transfer(src: Vfs, entries: List<FileEntry>, dst: Vfs, dstDir: String, move: Boolean): List<String> {
+    suspend fun transfer(src: Vfs, entries: List<FileEntry>, dst: Vfs, dstDir: String, move: Boolean): Transfer {
         for (e in entries) if (e.isDir && src.id == dst.id && Paths.isInside(dstDir, e.path)) {
-            throw IOException("No se puede ${if (move) "mover" else "copiar"} «${e.name}» dentro de sí misma")
+            throw IOException(if (move) tr("No se puede mover «%1» dentro de sí misma", e.name) else tr("No se puede copiar «%1» dentro de sí misma", e.name))
         }
-        progress = Progress(if (move) "Moviendo" else "Copiando")
+        progress = Progress(if (move) tr("Moviendo") else tr("Copiando"))
         // a move inside one file system is a rename, nothing to count
         val sameFs = src.id == dst.id
         if (!(move && sameFs)) progress = progress.copy(total = tally(src, entries).bytes)
         report(progress)
-        val created = ArrayList<String>()
-        for (e in entries) {
-            currentCoroutineContext().ensureActive()
-            if (move && sameFs && e.parent == dstDir.trimEnd('/').ifEmpty { "/" }) continue
-            val target = Paths.join(dstDir, Paths.freeName(e.name, e.isDir) { dst.exists(Paths.join(dstDir, it)) })
-            if (move && sameFs && src.move(e.path, target)) {
-                created += target
-                continue
+        val state = Placed()
+        for (e in entries) place(src, e, dst, norm(dstDir), move, sameFs, state)
+        return Transfer(state.pairs, state.replaced)
+    }
+
+    private class Placed {
+        val pairs = ArrayList<Pair<String, String>>()
+        var replaced = false
+    }
+
+    private fun norm(dir: String) = dir.trimEnd('/').ifEmpty { "/" }
+
+    private suspend fun decide(c: Conflict): Choice {
+        (if (c.incoming.isDir) allDirs else allFiles)?.let { return it }
+        val a = ask(c)
+        if (a.forAll) if (c.incoming.isDir) allDirs = a.choice else allFiles = a.choice
+        return a.choice
+    }
+
+    private suspend fun place(src: Vfs, e: FileEntry, dst: Vfs, dir: String, move: Boolean, sameFs: Boolean, st: Placed) {
+        currentCoroutineContext().ensureActive()
+        val here = sameFs && e.parent == dir
+        if (move && here) return
+        var name = e.name
+        val existing = dst.stat(Paths.join(dir, name))
+        if (existing != null) {
+            // pasting a copy next to its original: always "nombre (2)"
+            val choice = if (here) Choice.KEEP_BOTH else decide(Conflict(e, existing))
+            when (choice) {
+                Choice.SKIP -> {
+                    progress = progress.copy(done = progress.done + if (e.isDir) 0 else e.size)
+                    return
+                }
+                Choice.KEEP_BOTH -> name = Paths.freeName(e.name, e.isDir) { dst.exists(Paths.join(dir, it)) }
+                Choice.REPLACE -> if (e.isDir && existing.isDir) {
+                    // folders merge: what's inside is placed one by one, asking again on clashes
+                    val into = Paths.join(dir, name)
+                    for (c in src.list(e.path)) place(src, c, dst, into, move, sameFs, st)
+                    if (move) runCatching { if (src.list(e.path).isEmpty()) src.deleteOne(e.path, true) }
+                    return
+                } else {
+                    dst.delete(existing)
+                    st.replaced = true
+                }
             }
-            copyTree(src, e, dst, target)
-            created += target
-            if (move) src.delete(e)
         }
-        return created
+        val target = Paths.join(dir, name)
+        if (move && sameFs && src.move(e.path, target)) {
+            st.pairs += e.path to target
+            return
+        }
+        copyTree(src, e, dst, target)
+        st.pairs += e.path to target
+        if (move) src.delete(e)
     }
 
     private suspend fun copyTree(src: Vfs, e: FileEntry, dst: Vfs, target: String) {
@@ -89,7 +146,7 @@ class FileOps(private val report: (Progress) -> Unit) {
         }
     }
 
-    private suspend fun pump(input: java.io.InputStream, output: java.io.OutputStream) {
+    suspend fun pump(input: java.io.InputStream, output: java.io.OutputStream) {
         var last = 0L
         while (true) {
             val n = input.read(buf)
@@ -106,8 +163,19 @@ class FileOps(private val report: (Progress) -> Unit) {
         }
     }
 
+    /** Lets [Archives] and [Pgp] share the progress card. */
+    fun begin(title: String, total: Long = 0) {
+        progress = Progress(title, total = total)
+        report(progress)
+    }
+
+    fun current(name: String) {
+        progress = progress.copy(current = name)
+        report(progress)
+    }
+
     suspend fun delete(vfs: Vfs, entries: List<FileEntry>) {
-        progress = Progress("Eliminando", total = entries.size.toLong())
+        progress = Progress(tr("Eliminando"), total = entries.size.toLong())
         entries.forEachIndexed { i, e ->
             currentCoroutineContext().ensureActive()
             report(progress.copy(current = e.name, done = i.toLong()))
@@ -115,63 +183,50 @@ class FileOps(private val report: (Progress) -> Unit) {
         }
     }
 
-    /** Zips [entries] (which share a folder) into [zipPath], keeping folder structure. */
-    suspend fun zip(vfs: Vfs, entries: List<FileEntry>, zipPath: String) {
-        progress = Progress("Comprimiendo", total = tally(vfs, entries).bytes)
-        report(progress)
+    /** Local files into the trash of the volume each is on ([rootOf]). */
+    suspend fun trash(entries: List<FileEntry>, rootOf: (String) -> String?): List<TrashItem> {
+        progress = Progress(tr("Moviendo a la papelera"), total = entries.size.toLong())
+        val out = ArrayList<TrashItem>()
+        entries.forEachIndexed { i, e ->
+            currentCoroutineContext().ensureActive()
+            report(progress.copy(current = e.name, done = i.toLong()))
+            val root = rootOf(e.path) ?: throw IOException(tr("«%1» no está en un almacenamiento con papelera", e.name))
+            out += Trash.put(File(e.path), root)
+        }
+        return out
+    }
+
+    /** Compresses [entries] (which share a folder) into [target], keeping folder structure. */
+    suspend fun compress(vfs: Vfs, entries: List<FileEntry>, target: String, format: ArchiveFormat) {
+        begin(tr("Comprimiendo"), tally(vfs, entries).bytes)
         try {
-            ZipOutputStream(BufferedOutputStream(vfs.openWrite(zipPath))).use { zip ->
-                suspend fun add(e: FileEntry, prefix: String) {
-                    currentCoroutineContext().ensureActive()
-                    val name = prefix + e.name
-                    if (e.isDir) {
-                        zip.putNextEntry(ZipEntry("$name/").apply { time = e.modified })
-                        zip.closeEntry()
-                        for (c in vfs.list(e.path)) add(c, "$name/")
-                    } else {
-                        progress = progress.copy(current = e.name)
-                        zip.putNextEntry(ZipEntry(name).apply { time = e.modified })
-                        vfs.openRead(e.path).use { pump(it, zip) }
-                        zip.closeEntry()
-                    }
-                }
-                for (e in entries) add(e, "")
-            }
+            Archives.create(vfs, entries, target, format, this)
         } catch (t: Throwable) {
-            runCatching { vfs.deleteOne(zipPath, false) }
+            runCatching { vfs.deleteOne(target, false) }
             throw t
         }
     }
 
-    /** Extracts into a new folder named after the zip; returns it. Entries can't escape it ("zip slip"). */
-    suspend fun unzip(vfs: Vfs, zipEntry: FileEntry): String {
-        val dir = zipEntry.parent
-        val base = zipEntry.name.substringBeforeLast('.')
-        val out = Paths.join(dir, Paths.freeName(base, true) { vfs.exists(Paths.join(dir, it)) })
+    /**
+     * Extracts [archive] (a local copy of [entry]) into a new folder next to
+     * [entry] on [vfs], named after it; returns that folder. Entries can't
+     * escape it ("zip slip").
+     */
+    suspend fun extract(vfs: Vfs, entry: FileEntry, archive: File): String {
+        val dir = entry.parent
+        val out = Paths.join(dir, Paths.freeName(Archives.stem(entry.name), true) { vfs.exists(Paths.join(dir, it)) })
         vfs.mkdir(out)
-        progress = Progress("Extrayendo")
-        report(progress)
-        ZipInputStream(BufferedInputStream(vfs.openRead(zipEntry.path))).use { zip ->
-            while (true) {
-                currentCoroutineContext().ensureActive()
-                val ze = zip.nextEntry ?: break
-                val rel = ze.name.replace('\\', '/').split('/').filter { it.isNotEmpty() && it != "." }
-                if (rel.isEmpty() || ".." in rel) continue
-                var cur = out
-                for ((i, part) in rel.withIndex()) {
-                    val next = Paths.join(cur, part)
-                    val last = i == rel.lastIndex
-                    if (!last || ze.isDirectory) {
-                        if (!vfs.exists(next)) vfs.mkdir(next)
-                    } else {
-                        progress = progress.copy(current = part)
-                        vfs.openWrite(next).use { pump(zip, it) }
-                        if (ze.time > 0) runCatching { vfs.setModified(next, ze.time) }
-                    }
-                    cur = next
-                }
-            }
+        try {
+            Archives.extract(archive, vfs, out, this)
+        } catch (t: Throwable) {
+            runCatching { vfs.delete(FileEntry(Paths.name(out), out, true, 0, 0)) }
+            throw t
         }
         return out
+    }
+
+    /** Counts bytes read from an archive towards the progress bar. */
+    fun advance(n: Long) {
+        progress = progress.copy(done = progress.done + n)
     }
 }

@@ -3,9 +3,11 @@ package io.github.julssvanderhaack.luna.ui
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
-import java.util.Locale
+import io.github.julssvanderhaack.luna.I18n
+import io.github.julssvanderhaack.luna.tr
 
-private val ES = Locale.forLanguageTag("es-ES")
+private val ES get() = I18n.locale
+private val english get() = I18n.lang != "es"
 
 /** 1536 → "1,5 kB", as GNOME and desktop Luna count (powers of 1000). */
 fun formatSize(bytes: Long): String {
@@ -23,8 +25,8 @@ fun formatSize(bytes: Long): String {
 /** Formatters and calendars are slow to make and not thread-safe: one set per thread, reused. */
 private class DateTools {
     val time = SimpleDateFormat("HH:mm", ES)
-    val day = SimpleDateFormat("d MMM", ES)
-    val full = SimpleDateFormat("d MMM yyyy", ES)
+    val day = SimpleDateFormat(if (english) "MMM d" else "d MMM", ES)
+    val full = SimpleDateFormat(if (english) "MMM d, yyyy" else "d MMM yyyy", ES)
     val c: Calendar = Calendar.getInstance()
     val n: Calendar = Calendar.getInstance()
 }
@@ -41,13 +43,14 @@ fun formatDate(millis: Long, now: Long = System.currentTimeMillis()): String {
     val date = Date(millis)
     return when {
         sameYear && dayDiff == 0 -> t.time.format(date)
-        sameYear && dayDiff == 1 -> "ayer"
+        sameYear && dayDiff == 1 -> tr("ayer")
         sameYear -> t.day.format(date).trimEnd('.')
         else -> t.full.format(date).replace(".", "")
     }
 }
 
 fun formatFullDate(millis: Long): String =
-    if (millis <= 0) "—" else SimpleDateFormat("EEEE, d 'de' MMMM 'de' yyyy, HH:mm", ES).format(Date(millis))
+    if (millis <= 0) "—" else SimpleDateFormat(if (english) "EEEE, MMMM d, yyyy, HH:mm" else "EEEE, d 'de' MMMM 'de' yyyy, HH:mm", ES).format(Date(millis))
 
-fun plural(n: Int, one: String, many: String) = if (n == 1) "1 $one" else "$n $many"
+/** plural(3, "carpeta", "carpetas") → "3 carpetas"; the words are translated. */
+fun plural(n: Int, one: String, many: String) = if (n == 1) "1 ${tr(one)}" else "$n ${tr(many)}"

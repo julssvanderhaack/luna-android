@@ -1,8 +1,9 @@
 package io.github.julssvanderhaack.luna.remote
 
+import io.github.julssvanderhaack.luna.tr
 import io.github.julssvanderhaack.luna.fs.FileEntry
 import io.github.julssvanderhaack.luna.fs.Paths
-import io.github.julssvanderhaack.luna.fs.Vfs
+import io.github.julssvanderhaack.luna.fs.Perms
 import org.apache.sshd.client.SshClient
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier
 import org.apache.sshd.client.session.ClientSession
@@ -22,9 +23,9 @@ import java.util.concurrent.ConcurrentHashMap
 
 /** The server's key isn't the one we know (or we know none): the user decides. */
 class HostKeyException(val hostPort: String, val fingerprint: String, val changed: Boolean) :
-    IOException(if (changed) "La huella del servidor ha cambiado" else "Servidor desconocido")
+    IOException(if (changed) tr("La huella del servidor ha cambiado") else tr("Servidor desconocido"))
 
-class AuthException : IOException("Usuario o contraseña incorrectos")
+class AuthException : IOException(tr("Usuario o contraseña incorrectos"))
 
 /**
  * One SSH client for the whole app, one SFTP session per server, reused
@@ -97,14 +98,14 @@ class Sftp(private val store: ServerStore) {
     }
 }
 
-class SftpVfs(val server: Server, private val session: ClientSession, private val sftp: SftpClient) : Vfs {
+class SftpVfs(override val server: Server, private val session: ClientSession, private val sftp: SftpClient) : RemoteVfs {
     override val id = "sftp:${server.id}"
-    val isOpen get() = session.isOpen && sftp.isOpen
+    override val isOpen get() = session.isOpen && sftp.isOpen
 
     /** Where browsing starts: the configured folder, or the user's home on the server. */
-    val home: String by lazy { server.startPath.ifBlank { runCatching { sftp.canonicalPath(".") }.getOrDefault("/") } }
+    override val home: String by lazy { server.startPath.ifBlank { runCatching { sftp.canonicalPath(".") }.getOrDefault("/") } }
 
-    fun close() {
+    override fun close() {
         runCatching { sftp.close() }
         runCatching { session.close(true) }
     }
@@ -148,6 +149,15 @@ class SftpVfs(val server: Server, private val session: ClientSession, private va
 
     override fun openRead(path: String): InputStream = sftp.read(path)
     override fun openWrite(path: String): OutputStream = sftp.write(path)
+
+    override fun permissions(path: String): Perms? = runCatching {
+        val a = sftp.stat(path)
+        Perms(a.permissions and 0xFFF, a.owner ?: a.userId.toString(), a.group ?: a.groupId.toString(), canChange = true)
+    }.getOrNull()
+
+    override fun chmod(path: String, mode: Int) {
+        sftp.setStat(path, SftpClient.Attributes().perms(mode and 0xFFF))
+    }
 
     override fun setModified(path: String, millis: Long) {
         val a = sftp.stat(path)

@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.ui
 
+import io.github.julssvanderhaack.luna.tr
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -88,8 +89,8 @@ fun ThemesScreen(vm: MainViewModel) {
     val snack = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var exporting by remember { mutableStateOf<Palette?>(null) }
-    val importFailed = "Ese archivo no tiene colores de tema"
-    val imported = "Tema «%1\$s» importado"
+    val importFailed = tr("Ese archivo no tiene colores de tema")
+    val imported = { n: String -> tr("Tema «%1» importado", n) }
 
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
@@ -97,7 +98,7 @@ fun ThemesScreen(vm: MainViewModel) {
             ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
         vm.importTheme(uri, fileName) { name ->
             if (name != null) vm.setTheme(name)
-            scope.launch { snack.showSnackbar(if (name == null) importFailed else imported.format(ThemeRepository.displayName(name))) }
+            scope.launch { snack.showSnackbar(if (name == null) importFailed else imported(ThemeRepository.displayName(name))) }
         }
     }
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/toml")) { uri ->
@@ -107,10 +108,10 @@ fun ThemesScreen(vm: MainViewModel) {
     }
 
     BackScaffold(
-        "Temas", vm::back,
+        tr("Temas"), vm::back,
         actions = {
             IconButton(onClick = { importer.launch(arrayOf("*/*")) }) {
-                Icon(Icons.Rounded.FileDownload, "Importar colors.toml")
+                Icon(Icons.Rounded.FileDownload, tr("Importar colors.toml"))
             }
         },
     ) { pad ->
@@ -169,22 +170,22 @@ private fun ThemeCard(
                 if (selected) Icon(Icons.Rounded.Check, null, tint = r.accent.compose(), modifier = Modifier.size(18.dp))
                 Box {
                     IconButton(onClick = { menu = true }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Rounded.MoreVert, "Más opciones", tint = r.foregroundDim.compose())
+                        Icon(Icons.Rounded.MoreVert, tr("Más opciones"), tint = r.foregroundDim.compose())
                     }
                     DropdownMenu(menu, { menu = false }) {
                         if (onDelete != null) {
-                            DropdownMenuItem({ Text("Editar") }, { menu = false; onEdit() }, leadingIcon = { Icon(Icons.Rounded.Edit, null) })
+                            DropdownMenuItem({ Text(tr("Editar")) }, { menu = false; onEdit() }, leadingIcon = { Icon(Icons.Rounded.Edit, null) })
                         }
-                        DropdownMenuItem({ Text("Duplicar y editar") }, { menu = false; onCopy() }, leadingIcon = { Icon(Icons.Rounded.Palette, null) })
-                        DropdownMenuItem({ Text("Exportar colors.toml") }, { menu = false; onExport() }, leadingIcon = { Icon(Icons.Rounded.FileUpload, null) })
+                        DropdownMenuItem({ Text(tr("Duplicar y editar")) }, { menu = false; onCopy() }, leadingIcon = { Icon(Icons.Rounded.Palette, null) })
+                        DropdownMenuItem({ Text(tr("Exportar colors.toml")) }, { menu = false; onExport() }, leadingIcon = { Icon(Icons.Rounded.FileUpload, null) })
                         if (onDelete != null) {
-                            DropdownMenuItem({ Text("Borrar") }, { menu = false; onDelete() }, leadingIcon = { Icon(Icons.Rounded.Delete, null) })
+                            DropdownMenuItem({ Text(tr("Borrar")) }, { menu = false; onDelete() }, leadingIcon = { Icon(Icons.Rounded.Delete, null) })
                         }
                     }
                 }
             }
             Text(
-                if (palette.builtIn) "Omarchy" else "Tuyo",
+                if (palette.builtIn) tr("Omarchy") else tr("Tuyo"),
                 color = r.foregroundDim.compose(), style = MaterialTheme.typography.bodySmall,
             )
             Spacer(Modifier.height(10.dp))
@@ -198,15 +199,15 @@ private fun ThemeCard(
 }
 
 private val KEY_LABELS = mapOf(
-    "accent" to "Acento",
-    "background" to "Fondo",
-    "dark_background" to "Fondo oscuro",
-    "lighter_background" to "Fondo claro",
-    "foreground" to "Texto",
-    "dark_foreground" to "Texto secundario",
-    "selection" to "Selección",
-    "muted" to "Bordes",
-    "red" to "Error",
+    "accent" to tr("Acento"),
+    "background" to tr("Fondo"),
+    "dark_background" to tr("Fondo oscuro"),
+    "lighter_background" to tr("Fondo claro"),
+    "foreground" to tr("Texto"),
+    "dark_foreground" to tr("Texto secundario"),
+    "selection" to tr("Selección"),
+    "muted" to tr("Bordes"),
+    "red" to tr("Error"),
 )
 
 /** Colour the editor shows for [key] when the file doesn't set it: what the app is actually using. */
@@ -242,25 +243,25 @@ fun ThemeEditorScreen(vm: MainViewModel, base: String, editing: Boolean) {
     LunaTheme(resolved, dynamic = false) {
         Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
             BackScaffold(
-                if (editing) "Editar tema" else "Nuevo tema", vm::back,
+                if (editing) tr("Editar tema") else tr("Nuevo tema"), vm::back,
                 actions = {
                     TextButton(onClick = {
                         vm.saveTheme(draft.copy(name = name), replacing = if (editing) original.name else null)
                         vm.back()
-                    }) { Text("Guardar") }
+                    }) { Text(tr("Guardar")) }
                 },
             ) { pad ->
                 Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Nombre") },
+                        label = { Text(tr("Nombre")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(12.dp))
                     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                        listOf("dark" to "Oscuro", "light" to "Claro").forEachIndexed { i, (mode, label) ->
+                        listOf("dark" to tr("Oscuro"), "light" to tr("Claro")).forEachIndexed { i, (mode, label) ->
                             SegmentedButton(
                                 selected = resolved.dark == (mode == "dark"),
                                 onClick = { draft = draft.with("mode", mode) },
@@ -312,15 +313,15 @@ fun ThemeEditorScreen(vm: MainViewModel, base: String, editing: Boolean) {
 @Composable
 private fun Preview() {
     val cs = MaterialTheme.colorScheme
-    Text("Vista previa", style = MaterialTheme.typography.titleSmall, color = cs.primary)
+    Text(tr("Vista previa"), style = MaterialTheme.typography.titleSmall, color = cs.primary)
     Spacer(Modifier.height(8.dp))
     Surface(shape = RoundedCornerShape(12.dp), color = cs.surfaceContainerLow, border = BorderStroke(1.dp, cs.outlineVariant)) {
         Column {
             listOf(
-                FileEntry("Fotos de Luna", "/a", true, 0, 0) to "12 elementos",
-                FileEntry("IMG_2026.jpg", "/b", false, 0, 0) to "3,1 MB · ayer",
+                FileEntry(tr("Fotos de Luna"), "/a", true, 0, 0) to "12 elementos",
+                FileEntry("IMG_2026.jpg", "/b", false, 0, 0) to tr("3,1 MB · ayer"),
                 FileEntry("factura.pdf", "/c", false, 0, 0) to "180 kB · 12 oct",
-                FileEntry("canción.flac", "/d", false, 0, 0) to "28 MB · 3 sept",
+                FileEntry(tr("canción.flac"), "/d", false, 0, 0) to "28 MB · 3 sept",
             ).forEachIndexed { i, (e, sub) ->
                 Row(
                     Modifier.fillMaxWidth().background(if (i == 1) cs.secondaryContainer else Color.Transparent).padding(12.dp),
@@ -334,9 +335,9 @@ private fun Preview() {
                 }
             }
             Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = {}) { Text("Pegar aquí") }
-                FilledTonalButton(onClick = {}) { Text("Cancelar") }
-                Text("Error", color = cs.error, style = MaterialTheme.typography.bodySmall)
+                Button(onClick = {}) { Text(tr("Pegar aquí")) }
+                FilledTonalButton(onClick = {}) { Text(tr("Cancelar")) }
+                Text(tr("Error"), color = cs.error, style = MaterialTheme.typography.bodySmall)
             }
             Slider(value = 0.4f, onValueChange = {}, modifier = Modifier.padding(horizontal = 12.dp))
         }
@@ -361,8 +362,8 @@ fun ColorPickerDialog(initial: Rgb, swatches: List<Rgb>, onDismiss: () -> Unit, 
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = { onPick(current) }) { Text("Aceptar") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
+        confirmButton = { TextButton(onClick = { onPick(current) }) { Text(tr("Aceptar")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Cancelar")) } },
         text = {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -378,11 +379,11 @@ fun ColorPickerDialog(initial: Rgb, swatches: List<Rgb>, onDismiss: () -> Unit, 
                         modifier = Modifier.padding(start = 12.dp),
                     )
                 }
-                LabeledSlider("Tono", h, 0f..360f) { h = it; hex = hsv(h, s, v).hex() }
-                LabeledSlider("Saturación", s, 0f..1f) { s = it; hex = hsv(h, s, v).hex() }
-                LabeledSlider("Brillo", v, 0f..1f) { v = it; hex = hsv(h, s, v).hex() }
+                LabeledSlider(tr("Tono"), h, 0f..360f) { h = it; hex = hsv(h, s, v).hex() }
+                LabeledSlider(tr("Saturación"), s, 0f..1f) { s = it; hex = hsv(h, s, v).hex() }
+                LabeledSlider(tr("Brillo"), v, 0f..1f) { v = it; hex = hsv(h, s, v).hex() }
                 if (swatches.isNotEmpty()) {
-                    Text("Colores de la paleta", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp, bottom = 6.dp))
+                    Text(tr("Colores de la paleta"), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp, bottom = 6.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         swatches.forEach { c ->
                             Box(

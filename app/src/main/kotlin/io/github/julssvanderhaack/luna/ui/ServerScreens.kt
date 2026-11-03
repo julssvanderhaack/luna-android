@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.ui
 
+import io.github.julssvanderhaack.luna.tr
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -10,6 +11,8 @@ import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +34,7 @@ import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,6 +62,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.julssvanderhaack.luna.remote.Found
+import io.github.julssvanderhaack.luna.remote.Protocol
 import io.github.julssvanderhaack.luna.remote.Server
 import io.github.julssvanderhaack.luna.server.SftpServerService
 import io.github.julssvanderhaack.luna.server.authorizedKeys
@@ -67,9 +73,15 @@ import io.github.julssvanderhaack.luna.theme.LocalPalette
 import io.github.julssvanderhaack.luna.theme.compose
 
 @Composable
-fun EditServerScreen(vm: MainViewModel, id: String?) {
+fun EditServerScreen(vm: MainViewModel, id: String?, found: Found? = null) {
     val context = LocalContext.current
-    val original = remember(id) { id?.let { vm.luna.servers.find(it) } ?: Server() }
+    val original = remember(id) {
+        id?.let { vm.luna.servers.find(it) }
+            ?: found?.let { Server(name = it.name, host = it.host, port = it.port, user = it.user, protocol = it.protocol) }
+            ?: Server()
+    }
+    var protocol by remember { mutableStateOf(original.protocol) }
+    var share by remember { mutableStateOf(original.share) }
     var name by remember { mutableStateOf(original.name) }
     var host by remember { mutableStateOf(original.host) }
     var port by remember { mutableStateOf(original.port.toString()) }
@@ -78,20 +90,22 @@ fun EditServerScreen(vm: MainViewModel, id: String?) {
     var savePassword by remember { mutableStateOf(id == null || original.password != null) }
     var showPw by remember { mutableStateOf(false) }
     var key by remember { mutableStateOf<Uri?>(null) }
-    var keyName by remember { mutableStateOf(if (original.hasKey) "Clave guardada" else null) }
+    var keyName by remember { mutableStateOf(if (original.hasKey) tr("Clave guardada") else null) }
     var passphrase by remember { mutableStateOf(original.keyPassphrase.orEmpty()) }
     var startPath by remember { mutableStateOf(original.startPath) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             key = uri
             keyName = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-                ?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: "Clave"
+                ?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: tr("Clave")
         }
     }
-    val valid = host.isNotBlank() && user.isNotBlank() && port.toIntOrNull() in 1..65535
+    // SMB and FTP can go in as guest/anonymous; SMB needs the shared folder's name
+    val valid = host.isNotBlank() && (user.isNotBlank() || protocol != Protocol.SFTP) && port.toIntOrNull() in 1..65535 &&
+        (protocol != Protocol.SMB || share.isNotBlank())
 
     BackScaffold(
-        if (id == null) "Nuevo servidor SFTP" else "Editar servidor", vm::back,
+        if (id == null) tr("Nuevo servidor") else tr("Editar servidor"), vm::back,
         actions = {
             TextButton(enabled = valid, onClick = {
                 vm.saveServer(
@@ -101,53 +115,79 @@ fun EditServerScreen(vm: MainViewModel, id: String?) {
                         keyPassphrase = passphrase.ifEmpty { null },
                         hasKey = original.hasKey && keyName != null,
                         startPath = startPath.trim(),
+                        protocol = protocol,
+                        share = share.trim().trim('/', '\\'),
                     ),
                     key,
                 )
                 vm.back()
-            }) { Text("Guardar") }
+            }) { Text(tr("Guardar")) }
         },
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-            Field("Servidor (IP o nombre)", host, { host = it }, KeyboardType.Uri)
-            Field("Puerto", port, { port = it.filter(Char::isDigit) }, KeyboardType.Number)
-            Field("Usuario", user, { user = it })
+            Text(tr("Protocolo"), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Protocol.entries.forEach { p ->
+                    FilterChip(protocol == p, {
+                        // the port follows the protocol unless you had typed your own
+                        if (port.toIntOrNull() == protocol.defaultPort) port = p.defaultPort.toString()
+                        protocol = p
+                    }, { Text(p.label) })
+                }
+            }
+            Field(tr("Servidor (IP o nombre)"), host, { host = it }, KeyboardType.Uri)
+            Field(tr("Puerto"), port, { port = it.filter(Char::isDigit) }, KeyboardType.Number)
+            if (protocol == Protocol.SMB) Field(tr("Carpeta compartida (p. ej. Público)"), share, { share = it })
+            Field(
+                when (protocol) {
+                    Protocol.SFTP -> tr("Usuario")
+                    Protocol.SMB -> tr("Usuario (DOMINIO\\usuario; vacío = invitado)")
+                    else -> tr("Usuario (vacío = anónimo)")
+                },
+                user, { user = it },
+            )
             OutlinedTextField(
-                value = password, onValueChange = { password = it }, label = { Text("Contraseña") }, singleLine = true,
+                value = password, onValueChange = { password = it }, label = { Text(tr("Contraseña")) }, singleLine = true,
                 visualTransformation = if (showPw) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { showPw = !showPw }) {
-                        Icon(if (showPw) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, "Mostrar")
+                        Icon(if (showPw) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, tr("Mostrar"))
                     }
                 },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             )
             Row(Modifier.clickable { savePassword = !savePassword }, verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(savePassword, { savePassword = it })
-                Text("Guardar la contraseña en el móvil (si no, la pide al conectar)", style = MaterialTheme.typography.bodyMedium)
+                Text(tr("Guardar la contraseña en el móvil (si no, la pide al conectar)"), style = MaterialTheme.typography.bodyMedium)
             }
+            if (protocol == Protocol.SFTP) {
             Spacer(Modifier.height(8.dp))
-            Text("Clave privada (opcional)", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            Text(tr("Clave privada (opcional)"), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
             Text(
-                "Copia al móvil tu ~/.ssh/id_ed25519 (o id_rsa) del PC y elígela aquí. Luna guarda una copia privada.",
+                tr("Copia al móvil tu ~/.ssh/id_ed25519 (o id_rsa) del PC y elígela aquí. Luna guarda una copia privada."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 4.dp),
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(onClick = { picker.launch(arrayOf("*/*")) }) {
                     Icon(Icons.Rounded.Key, null, modifier = Modifier.size(18.dp))
-                    Text(keyName ?: "Elegir archivo de clave", modifier = Modifier.padding(start = 8.dp))
+                    Text(keyName ?: tr("Elegir archivo de clave"), modifier = Modifier.padding(start = 8.dp))
                 }
-                if (keyName != null) TextButton(onClick = { key = null; keyName = null }) { Text("Quitar") }
+                if (keyName != null) TextButton(onClick = { key = null; keyName = null }) { Text(tr("Quitar")) }
             }
             if (keyName != null) OutlinedTextField(
-                value = passphrase, onValueChange = { passphrase = it }, label = { Text("Frase de la clave (si tiene)") },
+                value = passphrase, onValueChange = { passphrase = it }, label = { Text(tr("Frase de la clave (si tiene)")) },
                 singleLine = true, visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             )
+            }
+            if (protocol == Protocol.FTPS) Text(
+                tr("FTP con TLS explícito (AUTH TLS), también para los datos. El FTP normal va sin cifrar: úsalo solo en tu red."),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 4.dp),
+            )
             Spacer(Modifier.height(8.dp))
-            Field("Nombre (opcional)", name, { name = it })
-            Field("Carpeta inicial (vacío = tu carpeta personal)", startPath, { startPath = it }, KeyboardType.Uri)
+            Field(tr("Nombre (opcional)"), name, { name = it })
+            Field(if (protocol == Protocol.SFTP) tr("Carpeta inicial (vacío = tu carpeta personal)") else tr("Carpeta inicial (vacío = la raíz)"), startPath, { startPath = it }, KeyboardType.Uri)
         }
     }
 }
@@ -189,17 +229,17 @@ fun PhoneServerScreen(vm: MainViewModel) {
     }
     fun copy(text: String) {
         context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("sftp", text))
-        vm.say("Copiado")
+        vm.say(tr("Copiado"))
     }
 
     BackScaffold(
-        "Servidor SFTP del móvil", vm::back,
+        tr("Servidor SFTP del móvil"), vm::back,
         actions = {
             TextButton(enabled = dirty && (cfg?.port ?: 0) in 1024..65535, onClick = {
                 cfg?.let { vm.setServerConfig(it) }
                 dirty = false
-                if (state.running) vm.say("Guardado. Detén y vuelve a iniciar el servidor para aplicarlo")
-            }) { Text("Guardar") }
+                if (state.running) vm.say(tr("Guardado. Detén y vuelve a iniciar el servidor para aplicarlo"))
+            }) { Text(tr("Guardar")) }
         },
     ) { pad ->
         val c = cfg ?: return@BackScaffold
@@ -211,51 +251,51 @@ fun PhoneServerScreen(vm: MainViewModel) {
                         Column(Modifier.weight(1f)) {
                             Text(
                                 when {
-                                    state.running -> "Activo"
-                                    state.starting -> "Arrancando…"
-                                    else -> "Detenido"
+                                    state.running -> tr("Activo")
+                                    state.starting -> tr("Arrancando…")
+                                    else -> tr("Detenido")
                                 },
                                 style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
                                 color = if (state.running) LocalPalette.current.green.compose() else MaterialTheme.colorScheme.onSurface,
                             )
                             if (state.running) Text(
-                                if (state.clients == 0) "Nadie conectado" else plural(state.clients, "conexión", "conexiones"),
+                                if (state.clients == 0) tr("Nadie conectado") else plural(state.clients, tr("conexión"), "conexiones"),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         if (state.running) Button(
                             onClick = { SftpServerService.stop(context) },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        ) { Text("Detener") }
-                        else Button(onClick = { if (dirty) { vm.setServerConfig(c); dirty = false }; start() }, enabled = !state.starting && portOk) { Text("Iniciar") }
+                        ) { Text(tr("Detener")) }
+                        else Button(onClick = { if (dirty) { vm.setServerConfig(c); dirty = false }; start() }, enabled = !state.starting && portOk) { Text(tr("Iniciar")) }
                     }
-                    state.error?.let { Text("No se ha podido iniciar: $it", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
+                    state.error?.let { Text(tr("No se ha podido iniciar: %1", it), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
                     if (state.running) {
                         if (state.addresses.isEmpty()) Text(
-                            "El móvil no está en ninguna red Wi-Fi. Conéctalo a la misma red que el PC.",
+                            tr("El móvil no está en ninguna red Wi-Fi. Conéctalo a la misma red que el PC."),
                             color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp),
                         )
                         if (state.addresses.isNotEmpty()) {
-                            Text("Desde el PC (Nautilus, Luna o el gestor de archivos):", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 12.dp))
+                            Text(tr("Desde el PC (Nautilus, Luna o el gestor de archivos):"), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 12.dp))
                             state.addresses.forEach { ip -> CopyLine("sftp://${state.user}@$ip:${state.port}/", ::copy) }
-                            Text("Desde una terminal:", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp))
+                            Text(tr("Desde una terminal:"), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp))
                             state.addresses.forEach { ip -> CopyLine("sftp -P ${state.port} ${state.user}@$ip", ::copy) }
                         }
-                        Text("Huella del móvil (la verás al conectar la primera vez):", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 12.dp))
+                        Text(tr("Huella del móvil (la verás al conectar la primera vez):"), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 12.dp))
                         Text(state.fingerprint, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
 
-            SectionTitle("Acceso", Modifier.padding(start = 0.dp))
-            Field("Usuario", c.user, { edit(c.copy(user = it.filter { ch -> !ch.isWhitespace() })) })
+            SectionTitle(tr("Acceso"), Modifier.padding(start = 0.dp))
+            Field(tr("Usuario"), c.user, { edit(c.copy(user = it.filter { ch -> !ch.isWhitespace() })) })
             OutlinedTextField(
-                value = c.password, onValueChange = { edit(c.copy(password = it)) }, label = { Text("Contraseña") }, singleLine = true,
+                value = c.password, onValueChange = { edit(c.copy(password = it)) }, label = { Text(tr("Contraseña")) }, singleLine = true,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
                 trailingIcon = {
                     Row {
-                        IconButton(onClick = { copy(c.password) }) { Icon(Icons.Rounded.ContentCopy, "Copiar") }
-                        IconButton(onClick = { edit(c.copy(password = Settings.newPassword())) }) { Icon(Icons.Rounded.Refresh, "Nueva contraseña") }
+                        IconButton(onClick = { copy(c.password) }) { Icon(Icons.Rounded.ContentCopy, tr("Copiar")) }
+                        IconButton(onClick = { edit(c.copy(password = Settings.newPassword())) }) { Icon(Icons.Rounded.Refresh, tr("Nueva contraseña")) }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -263,26 +303,26 @@ fun PhoneServerScreen(vm: MainViewModel) {
             OutlinedTextField(
                 value = if (c.port == 0) "" else c.port.toString(),
                 onValueChange = { edit(c.copy(port = it.filter(Char::isDigit).take(5).toIntOrNull() ?: 0)) },
-                label = { Text("Puerto") }, singleLine = true, isError = !portOk,
+                label = { Text(tr("Puerto")) }, singleLine = true, isError = !portOk,
                 // Android apps can't listen below 1024
-                supportingText = { if (!portOk) Text("Entre 1024 y 65535") },
+                supportingText = { if (!portOk) Text(tr("Entre 1024 y 65535")) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             )
             OutlinedTextField(
                 value = c.authorizedKeys, onValueChange = { edit(c.copy(authorizedKeys = it)) },
-                label = { Text("Claves públicas autorizadas (opcional)") },
-                placeholder = { Text("ssh-ed25519 AAAA… julss@pc") },
+                label = { Text(tr("Claves públicas autorizadas (opcional)")) },
+                placeholder = { Text(tr("ssh-ed25519 AAAA… julss@pc")) },
                 supportingText = {
                     val n = authorizedKeys(c.authorizedKeys).size
-                    Text(if (c.authorizedKeys.isBlank()) "Pega el contenido de ~/.ssh/id_ed25519.pub del PC para entrar sin contraseña" else plural(n, "clave válida", "claves válidas"))
+                    Text(if (c.authorizedKeys.isBlank()) tr("Pega el contenido de ~/.ssh/id_ed25519.pub del PC para entrar sin contraseña") else plural(n, tr("clave válida"), tr("claves válidas")))
                 },
                 textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                 minLines = 2, maxLines = 6,
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             )
 
-            SectionTitle("Qué ve el PC", Modifier.padding(start = 0.dp))
+            SectionTitle(tr("Qué ve el PC"), Modifier.padding(start = 0.dp))
             volumes.forEach { v ->
                 Row(Modifier.fillMaxWidth().clickable { edit(c.copy(root = v.path)) }, verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(c.root == v.path, { edit(c.copy(root = v.path)) })
@@ -298,14 +338,14 @@ fun PhoneServerScreen(vm: MainViewModel) {
             }
             Row(Modifier.fillMaxWidth().clickable { edit(c.copy(readOnly = !c.readOnly)) }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Solo lectura")
-                    Text("El PC puede ver y copiar, pero no cambiar ni borrar nada", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(tr("Solo lectura"))
+                    Text(tr("El PC puede ver y copiar, pero no cambiar ni borrar nada"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(c.readOnly, { edit(c.copy(readOnly = it)) })
             }
             Text(
-                "Solo SFTP: no hay terminal ni redirección de puertos. El servidor sigue activo con la pantalla apagada " +
-                    "hasta que lo detengas desde aquí o desde la notificación.",
+                tr("Solo SFTP: no hay terminal ni redirección de puertos. El servidor sigue activo con la pantalla apagada ") +
+                    tr("hasta que lo detengas desde aquí o desde la notificación."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 12.dp),
             )
@@ -320,6 +360,6 @@ private fun CopyLine(text: String, copy: (String) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        IconButton(onClick = { copy(text) }) { Icon(Icons.Rounded.ContentCopy, "Copiar") }
+        IconButton(onClick = { copy(text) }) { Icon(Icons.Rounded.ContentCopy, tr("Copiar")) }
     }
 }

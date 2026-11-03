@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.server
 
+import io.github.julssvanderhaack.luna.tr
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -65,7 +66,7 @@ class SftpServerService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        startForeground(NOTIFICATION_ID, notification(getString(R.string.server_starting)), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        startForeground(NOTIFICATION_ID, notification(tr("Arrancando…")), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         if (server == null) scope.launch { start() }
         return START_NOT_STICKY
     }
@@ -86,7 +87,7 @@ class SftpServerService : Service() {
             _state.value = ServerState(
                 running = true, port = cfg.port, user = cfg.user, addresses = addresses(), fingerprint = fp,
             )
-            notify(getString(R.string.server_running_on, _state.value.addresses.firstOrNull() ?: "?", cfg.port))
+            notify(tr("sftp://%1:%2 · toca para ver los datos", _state.value.addresses.firstOrNull() ?: "?", cfg.port))
         } catch (e: Exception) {
             _state.value = ServerState(error = e.message ?: e.javaClass.simpleName)
             stopSelf()
@@ -148,7 +149,7 @@ class SftpServerService : Service() {
     private fun notification(text: String): Notification {
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL, getString(R.string.server_channel), NotificationManager.IMPORTANCE_LOW),
+            NotificationChannel(CHANNEL, tr("Servidor SFTP"), NotificationManager.IMPORTANCE_LOW),
         )
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_SERVER, true),
@@ -159,11 +160,11 @@ class SftpServerService : Service() {
         )
         return Notification.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_server)
-            .setContentTitle(getString(R.string.server_title))
+            .setContentTitle(tr("Luna comparte el móvil por SFTP"))
             .setContentText(text)
             .setContentIntent(open)
             .setOngoing(true)
-            .addAction(Notification.Action.Builder(null, getString(R.string.server_stop), stop).build())
+            .addAction(Notification.Action.Builder(null, tr("Detener"), stop).build())
             .build()
     }
 

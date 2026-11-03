@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.ui
 
+import io.github.julssvanderhaack.luna.tr
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -131,7 +132,7 @@ fun BackScaffold(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Atrás") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, tr("Atrás")) }
                 },
                 actions = actions,
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),

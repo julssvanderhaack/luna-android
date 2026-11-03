@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.ui
 
+import io.github.julssvanderhaack.luna.tr
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
@@ -24,11 +25,11 @@ object Opener {
             .setDataAndType(uri(context, f), type)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
         try {
-            context.startActivity(if (chooser) Intent.createChooser(intent, "Abrir con").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) else intent)
+            context.startActivity(if (chooser) Intent.createChooser(intent, tr("Abrir con")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) else intent)
         } catch (e: ActivityNotFoundException) {
             // nothing claims this type: let the user pick from everything
             if (type != "*/*") open(context, f, "*/*", chooser = true)
-            else Toast.makeText(context, "Ninguna aplicación puede abrir este archivo", Toast.LENGTH_SHORT).show()
+            else Toast.makeText(context, tr("Ninguna aplicación puede abrir este archivo"), Toast.LENGTH_SHORT).show()
         }
     }
 

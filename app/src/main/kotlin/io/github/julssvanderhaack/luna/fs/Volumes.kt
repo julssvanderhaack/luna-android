@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.fs
 
+import io.github.julssvanderhaack.luna.tr
 import android.content.Context
 import android.os.Environment
 import android.os.StatFs
@@ -58,8 +59,8 @@ class Volumes(private val context: Context) {
         val stat = runCatching { StatFs(dir.path) }.getOrNull()
         Volume(
             label = when (type) {
-                VolumeType.INTERNAL -> "Almacenamiento interno"
-                else -> desc.ifBlank { if (type == VolumeType.USB) "Unidad USB" else "Tarjeta SD" }
+                VolumeType.INTERNAL -> tr("Almacenamiento interno")
+                else -> desc.ifBlank { if (type == VolumeType.USB) tr("Unidad USB") else tr("Tarjeta SD") }
             },
             path = dir.path,
             type = type,

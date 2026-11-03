@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.fs
 
+import io.github.julssvanderhaack.luna.tr
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -29,10 +30,23 @@ interface Vfs {
     fun openWrite(path: String): OutputStream
     fun setModified(path: String, millis: Long) {}
 
+    /** Owner, group and rwx bits, when the file system has them. */
+    fun permissions(path: String): Perms? = null
+    fun chmod(path: String, mode: Int): Unit = throw IOException(tr("Aquí no se pueden cambiar los permisos"))
+
     /** Removes a file, or a folder and everything inside it. */
     fun delete(entry: FileEntry) {
         if (entry.isDir && !entry.isLink) list(entry.path).forEach { delete(it) }
         deleteOne(entry.path, entry.isDir && !entry.isLink)
+    }
+}
+
+/** POSIX permissions: [mode] holds the 12 low bits (setuid, setgid, sticky, rwxrwxrwx). */
+data class Perms(val mode: Int, val owner: String, val group: String, val canChange: Boolean) {
+    val octal get() = "%04o".format(mode and 0xFFF)
+    val text get() = buildString {
+        val chars = "rwxrwxrwx"
+        for (i in 0 until 9) append(if (mode and (1 shl (8 - i)) != 0) chars[i] else '-')
     }
 }
 
@@ -63,9 +77,9 @@ object LocalVfs : Vfs {
         val f = File(dir)
         val names = f.list() ?: throw IOException(
             when {
-                !f.exists() -> "La carpeta ya no existe"
-                dir.startsWith("/storage/") || dir.startsWith("/sdcard") -> "Sin permiso para leer esta carpeta"
-                else -> "Sin permiso para leer esta carpeta.\nEs del sistema: Android solo deja entrar con root."
+                !f.exists() -> tr("La carpeta ya no existe")
+                dir.startsWith("/storage/") || dir.startsWith("/sdcard") -> tr("Sin permiso para leer esta carpeta")
+                else -> tr("Sin permiso para leer esta carpeta.\nEs del sistema: Android solo deja entrar con root.")
             },
         )
         return names.map { entry(File(f, it)) }
@@ -74,23 +88,37 @@ object LocalVfs : Vfs {
     override fun stat(path: String) = File(path).takeIf { it.exists() }?.let { entry(it) }
 
     override fun mkdir(path: String) {
-        if (!File(path).mkdir()) throw IOException("No se ha podido crear la carpeta")
+        if (!File(path).mkdir()) throw IOException(tr("No se ha podido crear la carpeta"))
     }
 
     override fun createFile(path: String) {
-        if (!File(path).createNewFile()) throw IOException("No se ha podido crear el archivo")
+        if (!File(path).createNewFile()) throw IOException(tr("No se ha podido crear el archivo"))
     }
 
     override fun move(from: String, to: String) = File(from).renameTo(File(to))
 
     override fun deleteOne(path: String, isDir: Boolean) {
         val f = File(path)
-        if (!f.delete() && f.exists()) throw IOException("No se ha podido borrar ${f.name}")
+        if (!f.delete() && f.exists()) throw IOException(tr("No se ha podido borrar %1", f.name))
     }
 
     override fun openRead(path: String): InputStream = FileInputStream(path)
     override fun openWrite(path: String): OutputStream = FileOutputStream(path)
     override fun setModified(path: String, millis: Long) {
         File(path).setLastModified(millis)
+    }
+
+    override fun permissions(path: String): Perms? = runCatching {
+        val p = File(path).toPath()
+        val mode = (Files.getAttribute(p, "unix:mode", LinkOption.NOFOLLOW_LINKS) as Int) and 0xFFF
+        val owner = Files.getOwner(p, LinkOption.NOFOLLOW_LINKS).name
+        val group = runCatching { (Files.getAttribute(p, "unix:group", LinkOption.NOFOLLOW_LINKS) as java.security.Principal).name }.getOrDefault("")
+        // shared storage is FUSE with fixed permissions; only Luna's own files (and root) can change
+        Perms(mode, owner, group, canChange = !path.startsWith("/storage/") && !path.startsWith("/sdcard") && File(path).canWrite())
+    }.getOrNull()
+
+    override fun chmod(path: String, mode: Int) {
+        val set = java.nio.file.attribute.PosixFilePermissions.fromString(Perms(mode, "", "", true).text)
+        Files.setPosixFilePermissions(File(path).toPath(), set)
     }
 }

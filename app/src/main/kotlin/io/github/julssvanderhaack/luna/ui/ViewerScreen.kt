@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.luna.ui
 
+import io.github.julssvanderhaack.luna.tr
 import android.graphics.ImageDecoder
 import android.graphics.drawable.AnimatedImageDrawable
 import android.graphics.drawable.Drawable
@@ -158,7 +159,7 @@ fun ViewerScreen(vm: MainViewModel, r: Route.Viewer) {
                     .statusBarsPadding().padding(horizontal = 4.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = vm::back) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Volver", tint = Color.White) }
+                IconButton(onClick = vm::back) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, tr("Volver"), tint = Color.White) }
                 Column(Modifier.weight(1f)) {
                     Text(current.name, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
                     if (images.size > 1) Text(
@@ -166,11 +167,11 @@ fun ViewerScreen(vm: MainViewModel, r: Route.Viewer) {
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                IconButton(onClick = { actions.dialog = FileDialog.Properties(listOf(current)) }) { Icon(Icons.Rounded.Info, "Propiedades", tint = Color.White) }
+                IconButton(onClick = { actions.dialog = FileDialog.Properties(listOf(current)) }) { Icon(Icons.Rounded.Info, tr("Propiedades"), tint = Color.White) }
                 IconButton(onClick = { vm.localFiles(r.loc, listOf(current)) { Opener.share(context, it) } }) {
-                    Icon(Icons.Rounded.Share, "Compartir", tint = Color.White)
+                    Icon(Icons.Rounded.Share, tr("Compartir"), tint = Color.White)
                 }
-                IconButton(onClick = { actions.sheet = listOf(current) }) { Icon(Icons.Rounded.MoreVert, "Más", tint = Color.White) }
+                IconButton(onClick = { actions.sheet = listOf(current) }) { Icon(Icons.Rounded.MoreVert, tr("Más"), tint = Color.White) }
             }
         }
         AnimatedVisibility(chrome, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
@@ -298,7 +299,7 @@ private fun ZoomableImage(
             is Pic.Failed -> Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 Icon(Icons.Rounded.BrokenImage, null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(56.dp))
                 Text(p.message, color = Color.White.copy(alpha = 0.8f), modifier = Modifier.padding(top = 12.dp, start = 24.dp, end = 24.dp))
-                TextButton(onClick = onOpenElsewhere) { Text("Abrir con otra aplicación") }
+                TextButton(onClick = onOpenElsewhere) { Text(tr("Abrir con otra aplicación")) }
             }
         }
     }
@@ -308,7 +309,7 @@ private fun Offset.isSpecified() = !x.isNaN() && !y.isNaN()
 
 private suspend fun load(vm: MainViewModel, loc: Loc, e: FileEntry, maxPx: Int): Pic {
     val f = vm.mediaFile(loc, e, ImageViewer.MAX_REMOTE)
-        ?: return Pic.Failed(if (e.size > ImageViewer.MAX_REMOTE) "Es demasiado grande para verla desde el servidor" else "No se ha podido descargar")
+        ?: return Pic.Failed(if (e.size > ImageViewer.MAX_REMOTE) tr("Es demasiado grande para verla desde el servidor") else tr("No se ha podido descargar"))
     return try {
         val src = ImageDecoder.createSource(f)
         val sizer = ImageDecoder.OnHeaderDecodedListener { decoder, info, _ ->
@@ -331,6 +332,6 @@ private suspend fun load(vm: MainViewModel, loc: Loc, e: FileEntry, maxPx: Int):
         }
     } catch (t: Throwable) {
         if (t is OutOfMemoryError) System.gc()
-        Pic.Failed("Luna no puede mostrar esta imagen")
+        Pic.Failed(tr("Luna no puede mostrar esta imagen"))
     }
 }

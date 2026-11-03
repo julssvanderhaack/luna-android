@@ -1,8 +1,11 @@
 package io.github.julssvanderhaack.luna.ui
 
+import io.github.julssvanderhaack.luna.tr
 import android.content.Intent
 import android.os.Environment
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -33,7 +36,10 @@ import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.AudioFile
 import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Dns
+import androidx.compose.material.icons.rounded.TravelExplore
+import androidx.compose.material.icons.rounded.WifiFind
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Eject
 import androidx.compose.material.icons.rounded.FolderZip
@@ -101,7 +107,14 @@ fun HomeScreen(vm: MainViewModel) {
     val servers by vm.servers.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val serverState by SftpServerService.state.collectAsStateWithLifecycle()
+    val found by vm.found.collectAsStateWithLifecycle()
+    var seesNetwork by remember { mutableStateOf(vm.luna.discovery.allowed()) }
+    val askNetwork = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        seesNetwork = ok
+        if (ok) vm.luna.discovery.start()
+    }
     val recentActions = remember { FileActions() }
+    var jump by remember { mutableStateOf(false) }
     val startServer = rememberServerStarter()
     LaunchedEffect(Unit) { vm.loadRecents() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.loadRecents() }
@@ -114,14 +127,16 @@ fun HomeScreen(vm: MainViewModel) {
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(painterResource(R.mipmap.ic_launcher_round), null, modifier = Modifier.size(30.dp))
-                        Text("Luna", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 10.dp))
+                        Text(tr("Luna"), fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 10.dp))
                     }
                 },
                 actions = {
+                    IconButton(onClick = { jump = true }) { Icon(Icons.Rounded.TravelExplore, tr("Ir a una carpeta")) }
                     IconButton(onClick = { vm.browse(Loc.Local(Environment.getExternalStorageDirectory().path)) }) {
-                        Icon(Icons.Rounded.Search, "Buscar en el almacenamiento interno")
+                        Icon(Icons.Rounded.Search, tr("Buscar en el almacenamiento interno"))
                     }
-                    IconButton(onClick = { vm.open(Route.Settings) }) { Icon(Icons.Rounded.Settings, "Ajustes") }
+                    TabsButton(vm)
+                    IconButton(onClick = { vm.open(Route.Settings) }) { Icon(Icons.Rounded.Settings, tr("Ajustes")) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -129,62 +144,74 @@ fun HomeScreen(vm: MainViewModel) {
     ) { pad ->
         LazyColumn(Modifier.padding(pad).fillMaxSize(), contentPadding = PaddingValues(bottom = 32.dp)) {
             item {
-                SectionTitle("Recientes") {
-                    TextButton(onClick = { vm.browse(Loc.Media(Category.RECENT)) }) { Text("Ver todos") }
+                SectionTitle(tr("Recientes")) {
+                    TextButton(onClick = { vm.browse(Loc.Media(Category.RECENT)) }) { Text(tr("Ver todos")) }
                 }
                 RecentStrip(recents, onOpen = { openEntry(vm, context, Loc.Media(Category.RECENT), it, recents.orEmpty()) }) { recentActions.sheet = listOf(it) }
             }
             item {
-                SectionTitle("Accesos rápidos")
+                SectionTitle(tr("Accesos rápidos"))
                 Shortcuts(vm)
             }
-            item { SectionTitle("Almacenamiento") }
+            item { SectionTitle(tr("Almacenamiento")) }
             items(volumes, key = { it.path }) { v -> VolumeCard(v, onOpen = { vm.browse(Loc.Local(v.path)) }) {
                 // apps can't unmount; Android's storage settings can
-                vm.say("Android solo deja expulsar desde sus ajustes de almacenamiento")
+                vm.say(tr("Android solo deja expulsar desde sus ajustes de almacenamiento"))
                 runCatching { context.startActivity(Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS)) }
             } }
             item {
-                NavRow(Icons.Rounded.AccountTree, "Raíz del sistema", "/ · todo el árbol de carpetas, como en el PC") { vm.browse(Loc.Local("/")) }
+                NavRow(Icons.Rounded.AccountTree, tr("Raíz del sistema"), tr("/ · todo el árbol de carpetas, como en el PC")) { vm.browse(Loc.Local("/")) }
+                NavRow(Icons.Rounded.Delete, tr("Papelera"), tr("Lo eliminado del móvil y de los USB, para recuperarlo")) { vm.open(Route.Trash) }
             }
             if (volumes.none { it.type != VolumeType.INTERNAL }) item {
                 Text(
-                    "Conecta un pendrive o un disco USB (con un adaptador OTG) y aparecerá aquí.",
+                    tr("Conecta un pendrive o un disco USB (con un adaptador OTG) y aparecerá aquí."),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
                 )
             }
             val favs = settings.favorites.mapNotNull { k -> locFromKey(k)?.let { k to it } }
             if (favs.isNotEmpty()) {
-                item { SectionTitle("Favoritos") }
+                item { SectionTitle(tr("Favoritos")) }
                 items(favs, key = { it.first }) { (_, loc) ->
                     val remote = (loc as? Loc.Remote)?.let { l -> servers.firstOrNull { it.id == l.serverId } }
                     NavRow(
                         Icons.Rounded.Star, loc.path.substringAfterLast('/').ifEmpty { "/" },
                         if (remote != null) "${remote.title} · ${loc.path}" else loc.path,
                         tint = LocalPalette.current.yellow.compose(),
-                        onLongClick = { vm.toggleFavorite(loc); vm.say("Quitado de favoritos") },
+                        onLongClick = { vm.toggleFavorite(loc); vm.say(tr("Quitado de favoritos")) },
                     ) { vm.browse(loc) }
                 }
             }
-            item { SectionTitle("Red") }
+            item { SectionTitle(tr("Red")) }
             items(servers.sortedBy { it.title.lowercase() }, key = { it.id }) { s -> ServerRow(vm, s) }
+            // announced on the Wi-Fi and not saved yet
+            val unsaved = found.filter { f -> servers.none { it.host == f.host && it.port == f.port && it.protocol == f.protocol } }
+            items(unsaved, key = { "found:" + it.key }) { f ->
+                NavRow(Icons.Rounded.WifiFind, f.name, tr("%1 · %2:%3 · en tu red", f.protocol.label, f.host, f.port)) { vm.openFound(f) }
+            }
+            if (!seesNetwork) item {
+                NavRow(Icons.Rounded.WifiFind, tr("Buscar servidores en tu red"), tr("Android pide permiso para ver los dispositivos de tu Wi-Fi")) {
+                    askNetwork.launch(io.github.julssvanderhaack.luna.remote.Discovery.PERMISSION)
+                }
+            }
             item {
-                NavRow(Icons.Rounded.Add, "Conectar a un servidor SFTP", "Tu PC, un NAS, una Raspberry…") { vm.open(Route.EditServer(null)) }
+                NavRow(Icons.Rounded.Add, tr("Conectar a un servidor"), tr("SFTP, SMB (Windows, NAS) o FTP: tu PC, una Raspberry…")) { vm.open(Route.EditServer(null)) }
                 PhoneServerRow(
                     running = serverState.running,
                     subtitle = when {
-                        serverState.running -> serverState.addresses.firstOrNull()?.let { "Activo · sftp://${serverState.user}@$it:${serverState.port}" } ?: "Activo"
-                        serverState.starting -> "Arrancando…"
-                        serverState.error != null -> "Error: ${serverState.error}"
-                        else -> "Para entrar en el móvil desde el PC"
+                        serverState.running -> serverState.addresses.firstOrNull()?.let { tr("Activo · sftp://%1@%2:%3", serverState.user, it, serverState.port) } ?: tr("Activo")
+                        serverState.starting -> tr("Arrancando…")
+                        serverState.error != null -> tr("Error: %1", serverState.error)
+                        else -> tr("Para entrar en el móvil desde el PC")
                     },
                     onToggle = { on -> if (on) startServer() else SftpServerService.stop(context) },
                 ) { vm.open(Route.PhoneServer) }
             }
         }
     }
-    FileActionsHost(vm, Loc.Media(Category.RECENT), recentActions)
+    FileActionsHost(vm, Loc.Media(Category.RECENT), recentActions, siblings = recents.orEmpty())
+    if (jump) JumpDialog(vm) { jump = false }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -194,7 +221,7 @@ private fun RecentStrip(recents: List<FileEntry>?, onOpen: (FileEntry) -> Unit, 
     when {
         recents == null -> Spacer(Modifier.height(140.dp))
         recents.isEmpty() -> Text(
-            "Aquí saldrán las fotos, descargas y documentos que hayas tocado últimamente.",
+            tr("Aquí saldrán las fotos, descargas y documentos que hayas tocado últimamente."),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 24.dp),
         )
@@ -250,7 +277,7 @@ private fun VolumeCard(v: Volume, onOpen: () -> Unit, onEject: () -> Unit) {
         Row(Modifier.padding(start = 16.dp, top = 14.dp, bottom = 14.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
             Column(Modifier.weight(1f).padding(start = 16.dp)) {
-                Text(v.label + if (v.readOnly) " (solo lectura)" else "", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(v.label + if (v.readOnly) tr(" (solo lectura)") else "", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 if (v.total > 0) {
                     val used = v.total - v.free
                     LinearProgressIndicator(
@@ -259,12 +286,12 @@ private fun VolumeCard(v: Volume, onOpen: () -> Unit, onEject: () -> Unit) {
                         drawStopIndicator = {},
                     )
                     Text(
-                        "${formatSize(used)} usados de ${formatSize(v.total)} · ${formatSize(v.free)} libres",
+                        tr("%1 usados de %2 · %3 libres", formatSize(used), formatSize(v.total), formatSize(v.free)),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-            if (v.type != VolumeType.INTERNAL) IconButton(onClick = onEject) { Icon(Icons.Rounded.Eject, "Expulsar") }
+            if (v.type != VolumeType.INTERNAL) IconButton(onClick = onEject) { Icon(Icons.Rounded.Eject, tr("Expulsar")) }
             else Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 8.dp))
         }
     }
@@ -301,12 +328,12 @@ fun NavRow(
 private fun ServerRow(vm: MainViewModel, s: Server) {
     var menu by remember { mutableStateOf(false) }
     Box {
-        NavRow(Icons.Rounded.Dns, s.title, "${s.user}@${s.hostPort}", onLongClick = { menu = true }) { vm.browse(Loc.Remote(s.id)) }
+        NavRow(Icons.Rounded.Dns, s.title, s.url, onLongClick = { menu = true }) { vm.browse(Loc.Remote(s.id)) }
         DropdownMenu(menu, { menu = false }) {
-            DropdownMenuItem({ Text("Abrir") }, { menu = false; vm.browse(Loc.Remote(s.id)) })
-            DropdownMenuItem({ Text("Editar…") }, { menu = false; vm.open(Route.EditServer(s.id)) })
-            DropdownMenuItem({ Text("Desconectar") }, { menu = false; vm.disconnect(s.id) })
-            DropdownMenuItem({ Text("Eliminar", color = MaterialTheme.colorScheme.error) }, { menu = false; vm.deleteServer(s.id) })
+            DropdownMenuItem({ Text(tr("Abrir")) }, { menu = false; vm.browse(Loc.Remote(s.id)) })
+            DropdownMenuItem({ Text(tr("Editar…")) }, { menu = false; vm.open(Route.EditServer(s.id)) })
+            DropdownMenuItem({ Text(tr("Desconectar")) }, { menu = false; vm.disconnect(s.id) })
+            DropdownMenuItem({ Text(tr("Eliminar"), color = MaterialTheme.colorScheme.error) }, { menu = false; vm.deleteServer(s.id) })
         }
     }
 }
@@ -314,7 +341,7 @@ private fun ServerRow(vm: MainViewModel, s: Server) {
 @Composable
 private fun PhoneServerRow(running: Boolean, subtitle: String, onToggle: (Boolean) -> Unit, onClick: () -> Unit) {
     NavRow(
-        Icons.Rounded.Lan, "Compartir este móvil por SFTP", subtitle,
+        Icons.Rounded.Lan, tr("Compartir este móvil por SFTP"), subtitle,
         tint = if (running) LocalPalette.current.green.compose() else MaterialTheme.colorScheme.primary,
         trailing = { Switch(checked = running, onCheckedChange = onToggle) },
         onClick = onClick,

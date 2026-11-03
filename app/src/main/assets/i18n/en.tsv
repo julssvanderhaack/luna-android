@@ -1,0 +1,637 @@
+# Luna Android: Spanish source<TAB>English. Strings from desktop Luna (i18n/luna_en_US.ts) are reused.
+ (%1 mm equiv. 35 mm)	 (%1 mm equiv. 35 mm)
+ (solo lectura)	 (read-only)
+ · %1:1 frente a sin comprimir	 · %1:1 versus uncompressed
+%1 (%2 bytes)	%1 (%2 bytes)
+%1 (se ha reemplazado algo: no se puede deshacer)	%1 (something was replaced: it can't be undone)
+%1 bits por canal	%1 bits per channel
+%1 bits por píxel	%1 bits per pixel
+%1 elementos	%1 items
+%1 elementos a la papelera	%1 items to the trash
+%1 elementos eliminados para siempre	%1 items deleted forever
+%1 en archivos	%1 in files
+%1 imágenes convertidas a %2	%1 images converted to %2
+%1 imágenes giradas	%1 images rotated
+%1 libres	%1 free
+%1 libres en %2	%1 free on %2
+%1 para copiar	%1 to copy
+%1 para mover	%1 to move
+%1 por segundo	%1 per second
+%1 usados de %2 · %3 libres	%1 used of %2 · %3 free
+%1 · %2 libres de %3	%1 · %2 free of %3
+%1 · %2 sin comprimir	%1 · %2 uncompressed
+%1 · %2:%3 · en tu red	%1 · %2:%3 · on your network
+%1 · en tu red	%1 · on your network
+%1 × %2 píxeles	%1 × %2 pixels
+%1° (guardada en EXIF)	%1° (stored in EXIF)
+(sin nombre)	(no name)
+(ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub).	(ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub).
+/ · todo el árbol de carpetas, como en el PC	/ · the whole folder tree, like on the PC
+3,1 MB · ayer	3.1 MB · yesterday
+\n\n… (%1 más: ábrelo con otra app para verlo entero)	\n\n… (%1 more: open it with another app to see all of it)
+Abrir	Open
+Abrir ajustes	Open settings
+Abrir como	Open as
+Abrir como…	Open as…
+Abrir con	Open with
+Abrir con otra aplicación	Open with another application
+Abrir con…	Open with…
+Abrir en Luna	Open in Luna
+Abrir en una pestaña nueva	Open in a new tab
+Abrir la carpeta que lo contiene	Open containing folder
+Acceso	Access
+Accesos rápidos	Quick access
+Acción	Action
+Acento	Accent
+Aceptar	OK
+Acerca de	About
+Activo	Running
+Activo · sftp://%1@%2:%3	Running · sftp://%1@%2:%3
+AES-256, como gpg -c: se abre con Luna, gpg o Kleopatra. Si la olvidas no hay forma de recuperarlo.	AES-256, like gpg -c: opens with Luna, gpg or Kleopatra. If you forget it there's no way to get it back.
+Ajustes	Settings
+ALAC (sin pérdida)	ALAC (lossless)
+Almacenamiento	Storage
+Almacenamiento interno	Internal storage
+Altitud	Altitude
+Android no sabe reproducir este archivo	Android can't play this file
+Android solo deja expulsar desde sus ajustes de almacenamiento	Android only lets you eject from its storage settings
+Animación	Animation
+Apariencia	Appearance
+Apertura	Aperture
+Aplicar	Apply
+Aquí no se pueden cambiar los permisos	Permissions can't be changed here
+Aquí saldrán las fotos, descargas y documentos que hayas tocado últimamente.	The photos, downloads and documents you've touched lately will show up here.
+Aquí: %1 · %2	Here: %1 · %2
+Archivo	File
+archivo	file
+Archivo %1	%1 file
+Archivo nuevo.txt	New file.txt
+Archivos	Files
+archivos	files
+Aritmética	Arithmetic
+Arrancando…	Starting…
+Artista	Artist
+Artista del álbum	Album artist
+Atrás	Back
+Audio	Audio
+Automático	Automatic
+Autor	Author
+AV1, con pérdida	AV1, lossy
+ayer	yesterday
+Añadir a favoritos	Add to favorites
+Año	Year
+Balance de blancos	White balance
+Bitrate	Bitrate
+Bitrate total	Total bitrate
+Bordes	Borders
+Borrar	Clear
+Borrar el original después	Delete the original afterwards
+Borrar los originales después	Delete the originals afterwards
+Brillo	Brightness
+Buscando dentro de los archivos…	Searching inside the files…
+Buscar	Search
+Buscar aquí y en subcarpetas	Search here and in subfolders
+Buscar en el almacenamiento interno	Search the internal storage
+Calculando…	Calculating…
+Cambiando permisos	Changing permissions
+Cambiar permisos…	Change permissions…
+Canales	Channels
+Cancelado	Canceled
+Cancelar	Cancel
+Cancelar todo	Cancel all
+canción.flac	song.flac
+carpeta	folder
+Carpeta	Folder
+Carpeta compartida (p. ej. Público)	Shared folder (e.g. Public)
+Carpeta inicial (vacío = la raíz)	Start folder (empty = the root)
+Carpeta inicial (vacío = tu carpeta personal)	Start folder (empty = your home folder)
+Carpeta nueva	New folder
+Carpeta personal	Home
+Carpeta vacía	Empty folder
+carpetas	folders
+Carpetas primero	Folders first
+Carátula	Cover
+Cerrar	Close
+Cerrar búsqueda	Close search
+Cerrar pestaña	Close tab
+Cifrado	Encryption
+Cifrado en «%1»	Encrypted into “%1”
+Cifrando	Encrypting
+Cifrar	Encrypt
+Cifrar…	Encrypt…
+Claro	Light
+Clave	Key
+Clave borrada	Key deleted
+Clave guardada	Key saved
+Clave importada	Key imported
+Clave privada (opcional)	Private key (optional)
+clave válida	valid key
+Claves OpenPGP	OpenPGP keys
+Claves públicas autorizadas (opcional)	Authorized public keys (optional)
+claves válidas	valid keys
+Codificación	Encoding
+Color	Color
+Color (YCbCr)	Color (YCbCr)
+Colores de la paleta	Palette colors
+Colores del fondo de pantalla	Wallpaper colors
+Combinar	Merge
+Compacta	Compact
+Compartir	Share
+Compartir este móvil por SFTP	Share this phone over SFTP
+Compensación	Compensation
+Compositor	Composer
+Compresión	Compression
+Comprimido	Archive
+Comprimidos	Archives
+Comprimiendo	Compressing
+Comprimir	Compress
+Comprimir y cifrar	Compress and encrypt
+Comprimir…	Compress…
+Con una contraseña	With a password
+Conecta un pendrive o un disco USB (con un adaptador OTG) y aparecerá aquí.	Plug in a USB stick or drive (with an OTG adapter) and it will show up here.
+Conectar	Connect
+Conectar a un servidor	Connect to a server
+conexión	connection
+Confiar en la nueva	Trust the new one
+Confiar y conectar	Trust and connect
+Contenedor	Container
+Contenido	Contents
+Contenido OpenPGP desconocido	Unknown OpenPGP content
+Contraseña	Password
+Contraseña incorrecta	Wrong password
+Convertir	Convert
+Convertir a	Convert to
+Convertir a…	Convert to…
+Convirtiendo	Converting
+Coordenadas	Coordinates
+Copia al móvil tu ~/.ssh/id_ed25519 (o id_rsa) del PC y elígela aquí. Luna guarda una copia privada.	Copy your ~/.ssh/id_ed25519 (or id_rsa) from the PC to the phone and choose it here. Luna keeps a private copy.
+Copiado	Copied
+Copiando	Copying
+Copiar	Copy
+Copiar a	Copy to
+Copiar aquí	Copy here
+Copiar a…	Copy to…
+Copiar ruta	Copy path
+Copyright	Copyright
+Cortar	Cut
+Creada «%1»	Created “%1”
+Creado «%1»	Created “%1”
+Crear	Create
+Creativo	Creative
+Cuadrícula	Grid
+Cualquier fecha	Any date
+Cualquier tamaño	Any size
+Cámara	Camera
+Códec	Codec
+Código	Code
+De 1 a 100 MB	1 to 100 MB
+Deflate, sin pérdida	Deflate, lossless
+Demasiado grande para la vista previa: ábrelo con otra app	Too big for the preview: open it with another app
+Densidad	Density
+Dentro de los archivos	Inside the files
+Descargado en Descargas	Downloaded to Downloads
+Descargar en el móvil	Download to the phone
+Descargas	Downloads
+Descendente	Descending
+Descifrado en «%1»	Decrypted into “%1”
+Descifrando	Decrypting
+Descifrar	Decrypt
+Descifrar aquí	Decrypt here
+Descifrar «%1»	Decrypt “%1”
+Desconectar	Disconnect
+Descripción	Description
+Desde el PC (Nautilus, Luna o el gestor de archivos):	From the PC (Nautilus, Luna or the file manager):
+Desde una terminal:	From a terminal:
+Deshacer	Undo
+Deshaciendo	Undoing
+Desplegar	Expand
+Detallada	Detailed
+Detener	Stop
+Detenido	Stopped
+Disco	Disc
+Disparado	Fired
+Distancia focal	Focal length
+Documento	Document
+Documento PDF	PDF document
+Documentos	Documents
+Dos acabarían con el mismo nombre	Two would end up with the same name
+Dos archivos acabarían con el mismo nombre	Two files would end up with the same name
+Duplicar y editar	Duplicate and edit
+Duración	Duration
+Editar	Edit
+Editar servidor	Edit server
+Editar tema	Edit theme
+Editar…	Edit…
+Ejecutar	Run
+El archivo cifrado está dañado o ha sido modificado	The encrypted file is damaged or has been modified
+El archivo cifrado está vacío	The encrypted file is empty
+El móvil no está en ninguna red Wi-Fi. Conéctalo a la misma red que el PC.	The phone isn't on any Wi-Fi network. Connect it to the same network as the PC.
+El PC puede ver y copiar, pero no cambiar ni borrar nada	The PC can see and copy, but not change or delete anything
+El servidor FTP lo ha rechazado	The FTP server refused it
+El servidor FTP no ha confirmado el archivo	The FTP server didn't confirm the file
+El servidor no acepta el usuario, la contraseña o la clave guardados	The server doesn't accept the saved user, password or key
+El servidor no te deja hacer eso (permiso denegado)	The server doesn't let you do that (permission denied)
+El servidor no tiene una carpeta compartida llamada «%1»	The server has no shared folder called “%1”
+Elegir archivo de clave	Choose key file
+elemento	item
+elemento copiado	item copied
+elemento movido	item moved
+elementos	items
+elementos copiados	items copied
+elementos movidos	items moved
+Elige un sitio	Choose a place
+Eliminando	Deleting
+Eliminar	Delete
+Eliminar definitivamente…	Delete permanently…
+Eliminar mueve a la papelera del móvil o del USB, y se puede deshacer	Delete moves to the trash of the phone or the USB drive, and can be undone
+Eliminar para siempre	Delete forever
+Eliminar…	Delete…
+Empezar en	Start at
+Enlace	Link
+Entrar	Enter
+Entre 1024 y 65535	Between 1024 and 65535
+Entrelazado	Interlaced
+Error	Error
+Error: %1	Error: %1
+Es demasiado grande para verla desde el servidor	It's too big to view from the server
+Es la primera vez que te conectas a %1. Comprueba que la huella coincide con la del servidor 	This is the first time you connect to %1. Check that the fingerprint matches the server's 
+Es un enlace simbólico	It's a symbolic link
+Es una clave secreta: sin ella no podrás abrir lo cifrado para ti, salvo que la vuelvas a importar.	It's a secret key: without it you won't be able to open what's encrypted for you, unless you import it again.
+Escala de grises	Grayscale
+Escala de grises con transparencia	Grayscale with transparency
+Escribe la contraseña con la que se cifró.	Type the password it was encrypted with.
+Escribe lo que buscas dentro de los archivos	Type what you're looking for inside the files
+Escribir	Write
+Escribir una ruta	Type a path
+Escuchar	Listen
+Escuchar entera en otra app	Listen to all of it in another app
+Ese archivo no tiene colores de tema	That file has no theme colors
+Ese servidor ya no está guardado	That server is no longer saved
+Espacio de color	Color space
+Espacio · %1	Space · %1
+Espera a que termine la operación en curso	Wait until the current operation finishes
+Está cifrado para %1. Importa esa clave secreta en Ajustes → Claves OpenPGP para abrirlo.	It's encrypted for %1. Import that secret key in Settings → OpenPGP keys to open it.
+Está cifrado para una clave que no tienes en Luna	It's encrypted for a key you don't have in Luna
+Está cifrado para una de tus claves: escribe su frase (vacía si no tiene).	It's encrypted for one of your keys: type its passphrase (empty if it has none).
+Estéreo	Stereo
+Etiquetas	Tags
+Explorador de archivos · GPL-3.0 · versión de escritorio en github.com/julssvanderhaack/luna	File manager · GPL-3.0 · desktop version at github.com/julssvanderhaack/luna
+Exportar colors.toml	Export colors.toml
+Exposición	Exposure
+Expulsar	Eject
+Extraer	Extract
+Extraer aquí	Extract here
+Extraer todo	Extract all
+Extrayendo	Extracting
+Extraído en «%1»	Extracted to “%1”
+Falta el nombre de la carpeta compartida (Editar servidor)	The shared folder's name is missing (Edit server)
+Favoritos	Favorites
+Fecha	Date
+Fecha de captura	Date taken
+Filtrar esta carpeta	Filter this folder
+FLAC (sin pérdida)	FLAC (lossless)
+Flash	Flash
+Fondo	Background
+Fondo claro	Light background
+Fondo oscuro	Dark background
+Formato	Format
+Foto	Photo
+Fotogramas	Frames
+Fotos de Luna	Luna's photos
+fotos viaje, /storage/…	holiday photos, /storage/…
+Fragmento de 30 s de la mitad · %1	30 s clip from the middle · %1
+Frase de la clave	Key passphrase
+Frase de la clave (si tiene)	Key passphrase (if it has one)
+Frecuencia	Sample rate
+FTP con TLS explícito (AUTH TLS), también para los datos. El FTP normal va sin cifrar: úsalo solo en tu red.	FTP with explicit TLS (AUTH TLS), for the data too. Plain FTP is unencrypted: use it only on your own network.
+FTPS (FTP con TLS)	FTPS (FTP with TLS)
+Fuente	Font
+Girando	Rotating
+Girar a la derecha	Rotate right
+Girar a la izquierda	Rotate left
+Grupo	Group
+Guardado. Detén y vuelve a iniciar el servidor para aplicarlo	Saved. Stop and start the server again to apply it
+Guardar	Save
+Guardar la contraseña en el móvil (si no, la pide al conectar)	Save the password on the phone (otherwise it's asked when connecting)
+Género	Genre
+Hace falta la contraseña	A password is needed
+hasta que lo detengas desde aquí o desde la notificación.	until you stop it from here or from the notification.
+HDR (HLG)	HDR (HLG)
+HDR10 (PQ)	HDR10 (PQ)
+HEIF / HEIC	HEIF / HEIC
+HEVC (H.265), con pérdida	HEVC (H.265), lossy
+Hoja de cálculo	Spreadsheet
+Huella del móvil (la verás al conectar la primera vez):	Phone's fingerprint (you'll see it the first time you connect):
+Idioma	Language
+Imagen	Image
+Importar claves	Import keys
+Importar colors.toml	Import colors.toml
+Importar un archivo de claves…	Import a key file…
+Imágenes	Pictures
+Incluida	Included
+Iniciar	Start
+Inicio	Home
+Instalador de Android	Android installer
+Interno · %1 libres	Internal · %1 free
+Ir a una carpeta	Go to a folder
+Ir a una carpeta…	Go to a folder…
+JPEG con pérdida	Lossy JPEG
+JPEG con pérdida · calidad ≈ %1 %	Lossy JPEG · quality ≈ %1 %
+La carpeta no está vacía	The folder isn't empty
+La carpeta ya no existe	The folder no longer exists
+La clave de %1 no es la que se guardó. Puede que se haya reinstalado, 	The key of %1 isn't the one that was saved. It may have been reinstalled, 
+La huella del servidor ha cambiado	The server's fingerprint has changed
+La papelera está vacía	The trash is empty
+Las carpetas se borran con todo lo que contienen. No se puede deshacer.	Folders are deleted with everything inside them. This can't be undone.
+Las públicas de otras personas y las tuyas, para cifrar y descifrar como gpg	Other people's public keys and your own, to encrypt and decrypt like gpg
+Leer	Read
+Letra	Lyricist
+Leyendo los metadatos…	Reading the metadata…
+Libro	Book
+Lista	List
+Lo eliminado del móvil y de los USB, para recuperarlo	What was deleted from the phone and USB drives, to get it back
+Lo mismo con las demás carpetas	The same for the other folders
+Lo mismo con los demás archivos	The same for the other files
+Lo que eliminas del móvil o de un USB viene aquí, en la carpeta .Trash-luna de cada uno.	What you delete from the phone or a USB drive comes here, in the .Trash-luna folder of each one.
+Los que empiezan por un punto	The ones that start with a dot
+Los RAR no se pueden abrir: su formato es cerrado	RAR archives can't be opened: the format is closed
+Lugares	Places
+Luna	Luna
+Luna %1	Luna %1
+Luna comparte el móvil por SFTP	Luna is sharing the phone over SFTP
+Luna necesita ver tus archivos	Luna needs to see your files
+Luna no puede mostrar esta imagen	Luna can't show this image
+Luna se reinicia para cambiar de idioma	Luna restarts to change the language
+LZW, sin pérdida (hasta 256 colores)	LZW, lossless (up to 256 colors)
+Mantener ambos	Keep both
+Manual	Manual
+Material You: ignora el tema elegido	Material You: ignores the chosen theme
+Megapíxeles	Megapixels
+Menos de 1 MB	Less than 1 MB
+Menú	Menu
+Miniatura incrustada	Embedded thumbnail
+Modificado	Modified
+Modo	Mode
+Mono	Mono
+Mostrar	Show
+Mostrar archivos ocultos	Show hidden files
+Mover	Move
+Mover a	Move to
+Mover a la papelera	Move to trash
+Mover aquí	Move here
+Mover a…	Move to…
+Moviendo	Moving
+Moviendo a la papelera	Moving to the trash
+Más	More
+Más datos EXIF	More EXIF data
+Más de 100 MB	More than 100 MB
+Más opciones	More options
+Nada coincide	Nothing matches
+Nada coincide con «%1»	Nothing matches “%1”
+Nada con esos filtros	Nothing with those filters
+Nadie conectado	Nobody connected
+Ninguna aplicación puede abrir este archivo	No application can open this file
+No disparado	Not fired
+No es un archivo cifrado con OpenPGP	Not an OpenPGP encrypted file
+No es un archivo comprimido que Luna conozca	Not an archive Luna knows
+No es un archivo de claves OpenPGP	Not an OpenPGP key file
+No está en el archivo	It's not in the archive
+No existe la carpeta «%1»	The folder “%1” doesn't exist
+No hay claves OpenPGP en ese archivo	There are no OpenPGP keys in that file
+No hay claves públicas en Luna. Impórtalas en Ajustes → Claves OpenPGP (un .asc de gpg --export).	There are no public keys in Luna. Import them in Settings → OpenPGP keys (an .asc from gpg --export).
+No hay nada aquí todavía	Nothing here yet
+No hay texto que enseñar: ábrelo con otra app	No text to show: open it with another app
+No queda espacio en el servidor	No space left on the server
+No se ha pegado nada	Nothing was pasted
+No se ha podido borrar %1	Couldn't delete %1
+No se ha podido crear el archivo	Couldn't create the file
+No se ha podido crear la carpeta	Couldn't create the folder
+No se ha podido descargar	Couldn't download
+No se ha podido guardar la imagen	Couldn't save the image
+No se ha podido guardar «%1»	Couldn't save “%1”
+No se ha podido iniciar: %1	Couldn't start: %1
+No se ha podido leer «%1»	Couldn't read “%1”
+No se ha podido mover «%1» a la papelera	Couldn't move “%1” to the trash
+No se ha podido renombrar a «%1»	Couldn't rename to “%1”
+No se ha podido renombrar «%1»	Couldn't rename “%1”
+No se ha podido restaurar «%1»	Couldn't restore “%1”
+No se ha podido volver a llamar «%1»	Couldn't give “%1” its name back
+No se puede abrir	Can't open
+No se puede abrir el PDF (¿tiene contraseña?)	Can't open the PDF (does it have a password?)
+No se puede copiar «%1» dentro de sí misma	Can't copy “%1” into itself
+No se puede crear la papelera en %1	Can't create the trash in %1
+No se puede deshacer.	This can't be undone.
+No se puede leer	Can't be read
+No se puede mover «%1» dentro de sí misma	Can't move “%1” into itself
+No se puede recrear %1	Can't recreate %1
+no sirve para cifrar	can't encrypt
+Nombre	Name
+Nombre (opcional)	Name (optional)
+Normalmente sin comprimir	Usually uncompressed
+Nueva	New
+Nueva carpeta	New folder
+Nueva contraseña	New password
+Nueva pestaña	New tab
+Nuevo archivo	New file
+Nuevo archivo vacío	New empty file
+Nuevo servidor	New server
+Nuevo tema	New theme
+Nuevo: %1 · %2	New: %1 · %2
+Numerar	Number
+o que alguien se esté haciendo pasar por él. Conéctate solo si sabes por qué ha cambiado.	or someone may be pretending to be it. Only connect if you know why it changed.
+Objetivo	Lens
+Octal	Octal
+Omarchy	Omarchy
+Opciones de %1	Options for %1
+Ordenar por	Sort by
+Oscuro	Dark
+Otro (todas las aplicaciones)	Other (all applications)
+Otro programa lo tiene abierto	Another program has it open
+Otros	Others
+Paisaje	Landscape
+Paleta indexada	Indexed palette
+Papelera	Trash
+Para abrir lo que te envían a ti, importa tu clave secreta (gpg --armor --export-secret-keys); 	To open what is sent to you, import your secret key (gpg --armor --export-secret-keys); 
+Para cifrar para otras personas, importa sus claves públicas (gpg --armor --export correo > clave.asc). 	To encrypt for other people, import their public keys (gpg --armor --export email > key.asc). 
+Para entrar en el móvil desde el PC	To get into the phone from the PC
+Para estas personas (sus claves públicas)	For these people (their public keys)
+Para explorar el almacenamiento, los pendrives y los discos USB, Android pide activar 	To browse the storage, USB sticks and USB drives, Android asks you to turn on 
+Pausa	Pause
+PCM (sin comprimir)	PCM (uncompressed)
+Pega el contenido de ~/.ssh/id_ed25519.pub del PC para entrar sin contraseña	Paste the contents of the PC's ~/.ssh/id_ed25519.pub to log in without a password
+Pegar aquí	Paste here
+Permisos	Permissions
+Permisos cambiados	Permissions changed
+Permisos de «%1»	Permissions of “%1”
+Pestañas	Tabs
+Pista	Track
+Pista de audio	Audio track
+Pista de vídeo	Video track
+Plegar	Collapse
+Podrás volver a importarla.	You can import it again.
+Portada	Cover
+Presentación	Presentation
+Prioridad a la apertura	Aperture priority
+Prioridad a la velocidad	Shutter priority
+Profundidad	Bit depth
+Progresiva	Progressive
+Propiedades	Properties
+Propiedades de la carpeta	Folder properties
+Propietario	Owner
+Protocolo	Protocol
+Puerto	Port
+Página %1	Page %1
+píxeles por cm	pixels per cm
+Pública	Public
+Quedará así:	It will look like this:
+Quitado de favoritos	Removed from favorites
+Quitar	Remove
+Quitar de favoritos	Remove from favorites
+Qué ocupa espacio	What's taking up space
+Qué ve el PC	What the PC sees
+Rango dinámico	Dynamic range
+Raíz	Root
+Raíz del sistema	System root
+Recientes	Recent
+Red	Network
+Reduciendo	Reducing
+Reducir	Reduce
+Reducir tamaño	Reduce size
+Reducir tamaño…	Reduce size…
+Reemplazar	Replace
+Reemplazar por	Replace with
+Reemplazar texto	Replace text
+Rehacer	Redo
+Rehaciendo	Redoing
+Reintentar	Retry
+Renombrado a «%1»	Renamed to “%1”
+Renombrar	Rename
+Renombrar %1 elementos	Rename %1 items
+Renombrar en lote	Batch rename
+Renombrar en lote…	Batch rename…
+Renombrar…	Rename…
+Repítela	Repeat it
+Resolución	Resolution
+Resolución de impresión	Print resolution
+Restaurando	Restoring
+Restaurar	Restore
+Restaurar o vaciar	Restore or empty
+Retrato	Portrait
+RGB con transparencia	RGB with transparency
+Rotación	Rotation
+Ruta copiada	Path copied
+Ruta no válida	Invalid path
+Salir de la selección	Leave selection
+Saltar	Skip
+salvo a los servidores que tú añadas.	except to the servers you add.
+Saturación	Saturation
+Se crea una copia en ese formato; el original no cambia.	A copy is made in that format; the original doesn't change.
+se guarda dentro de Luna, protegida con su frase.	it's kept inside Luna, protected by its passphrase.
+Secuencial (baseline)	Sequential (baseline)
+Secuencial extendida	Extended sequential
+Seleccionar	Select
+Seleccionar todo	Select all
+Selección	Selection
+Selección múltiple	Multiple selection
+Servidor	Server
+Servidor (IP o nombre)	Server (IP or name)
+Servidor de solo lectura	Read-only server
+Servidor desconocido	Unknown server
+Servidor nuevo	New server
+Servidor SFTP	SFTP server
+Servidor SFTP del móvil	Phone's SFTP server
+Setgid	Setgid
+Setuid	Setuid
+SFTP (SSH)	SFTP (SSH)
+SFTP, SMB (Windows, NAS) o FTP: tu PC, una Raspberry…	SFTP, SMB (Windows, NAS) or FTP: your PC, a Raspberry Pi…
+sftp://%1:%2 · toca para ver los datos	sftp://%1:%2 · tap to see the details
+Sin permiso para leer esta carpeta	No permission to read this folder
+Sin permiso para leer esta carpeta.\nEs del sistema: Android solo deja entrar con root.	No permission to read this folder.\nIt belongs to the system: Android only lets root in.
+Sin pérdida	Lossless
+SMB (Windows, NAS)	SMB (Windows, NAS)
+Software	Software
+Solo lectura	Read only
+Solo SFTP: no hay terminal ni redirección de puertos. El servidor sigue activo con la pantalla apagada 	SFTP only: no terminal or port forwarding. The server keeps running with the screen off 
+ssh-ed25519 AAAA… julss@pc	ssh-ed25519 AAAA… julss@pc
+Sticky	Sticky
+Subir	Up
+Submuestreo	Subsampling
+Subtítulos	Subtitles
+Sí	Yes
+Sí (APNG)	Yes (APNG)
+Tamaño	Size
+También a todo lo que hay dentro	Also to everything inside
+tar.xz (más pequeño, más lento)	tar.xz (smaller, slower)
+Tarjeta SD	SD card
+Tema	Theme
+Tema «%1» importado	Theme “%1” imported
+Temas	Themes
+Texto	Text
+Texto dentro de los archivos	Text inside the files
+Texto secundario	Secondary text
+Textos, Markdown, comprimidos y documentos de Office se abren en la vista previa de Luna	Texts, Markdown, archives and Office documents open in Luna's preview
+Tipo	Type
+Tipo %1	Type %1
+Toca para seleccionar	Tap to select
+Toca una carpeta para ver qué hay dentro; mantén pulsado para abrirla.	Tap a folder to see what's inside; long-press to open it.
+Tono	Hue
+Transparencia	Transparency
+Tuya (pública y secreta)	Yours (public and secret)
+Tuyo	Yours
+Título	Title
+Ubicación	Location
+Una copia con el lado largo como mucho de:	A copy with the long side at most:
+Una de las claves ya no puede cifrar	One of the keys can no longer encrypt
+Unidad USB	USB drive
+Usar la papelera	Use the trash
+Usuario	User
+Usuario (DOMINIO\\usuario; vacío = invitado)	User (DOMAIN\\user; empty = guest)
+Usuario (vacío = anónimo)	User (empty = anonymous)
+Usuario o contraseña incorrectos	Wrong user name or password
+Usuario, contraseña, claves y qué carpeta ve el PC	User, password, keys and which folder the PC sees
+Vaciando la papelera	Emptying the trash
+Vaciar la papelera	Empty the trash
+Vacía	Empty
+Ve a otra carpeta y pulsa Pegar	Go to another folder and tap Paste
+Ve a otra carpeta y pulsa Pegar para moverlo	Go to another folder and tap Paste to move it
+Ver en el mapa	View on the map
+Ver todos	See all
+Vista previa	Preview
+Volver	Back
+VP8 y VP8L (mixta)	VP8 and VP8L (mixed)
+VP8, con pérdida	VP8, lossy
+VP8L, sin pérdida	VP8L, lossless
+Vídeo	Video
+Vídeos	Videos
+Ya existe	Already exists
+Ya existe «%1»	“%1” already exists
+Ya hay algo en «%1»: no se puede deshacer	There's already something at “%1”: it can't be undone
+Ya hay una carpeta «%1»	There's already a folder “%1”
+Zoom digital	Digital zoom
+¡La huella del servidor ha cambiado!	The server's fingerprint has changed!
+«%1» a la papelera	“%1” to the trash
+«%1» eliminado	“%1” deleted
+«%1» eliminado para siempre	“%1” deleted forever
+«%1» girada	“%1” rotated
+«%1» no es una carpeta compartida	“%1” isn't a shared folder
+«%1» no está en un almacenamiento con papelera	“%1” isn't on a storage with a trash
+«%1» restaurado en %2	“%1” restored to %2
+«%1» ya no está	“%1” is gone
+«%1» ya no está vacía: no se deshace	“%1” is no longer empty: not undone
+«Combinar» mete lo nuevo dentro de la que ya está y pregunta por cada archivo repetido.	“Merge” puts the new one inside the existing one and asks about each repeated file.
+«Permitir acceso para gestionar todos los archivos». Luna no envía nada a ningún sitio 	“Allow access to manage all files”. Luna sends nothing anywhere 
+¿Borrar la clave de %1?	Delete the key of %1?
+¿Eliminar %1 elementos definitivamente?	Delete %1 items permanently?
+¿Eliminar %1 elementos?	Delete %1 items?
+¿Eliminar %1 para siempre?	Delete %1 forever?
+¿Eliminar «%1» definitivamente?	Delete “%1” permanently?
+¿Eliminar «%1»?	Delete “%1”?
+¿Vaciar la papelera?	Empty the trash?
+Álbum	Album
+Árbol	Tree
+Última semana	Last week
+Últimas 24 horas	Last 24 hours
+Último año	Last year
+Último mes	Last month
+Buscar servidores en tu red	Find servers on your network
+Android pide permiso para ver los dispositivos de tu Wi-Fi	Android asks for permission to see the devices on your Wi-Fi
